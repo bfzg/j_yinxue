@@ -1,0 +1,47 @@
+{
+  "app": {
+    "name": "九哥隐学",
+    "author": "九哥",
+    "cover": "",
+    "description": "九哥隐学原创音频内容"
+  },
+  "settings": {
+    "autoplayNext": true,
+    "playMode": "sequence"
+  },
+  "items": [
+    {
+      "id": "ep001",
+      "title": "第一期：隐学是什么",
+      "description": "从普通人的视角聊聊隐学。",
+      "cover": "",
+      "audioUrl": "https://example.com/audio/ep001.mp3",
+      "duration": 1860,
+      "sort": 1,
+      "publishedAt": "2026-07-11",
+      "enabled": true
+    },
+    {
+      "id": "ep002",
+      "title": "第二期：如何理解命运和选择",
+      "description": "命不是定死的，选择也不是随意的。",
+      "cover": "",
+      "audioUrl": "https://example.com/audio/ep002.mp3",
+      "duration": 2145,
+      "sort": 2,
+      "publishedAt": "2026-07-12",
+      "enabled": true
+    },
+    {
+      "id": "ep003",
+      "title": "第三期：普通人如何建立判断力",
+      "description": "把复杂信息拆成可以验证的判断。",
+      "cover": "",
+      "audioUrl": "https://example.com/audio/ep003.mp3",
+      "duration": 1988,
+      "sort": 3,
+      "publishedAt": "2026-07-13",
+      "enabled": true
+    }
+  ]
+}
