@@ -1,0 +1,5 @@
+.venv/
+output/
+cookie.txt
+__pycache__/
+*.pyc

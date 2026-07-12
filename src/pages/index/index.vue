@@ -35,6 +35,7 @@ interface PlaybackState {
 }
 
 const PLAYBACK_STATE_KEY = 'j_yinxue_playback_state'
+const DEFAULT_COVER = '/static/images/logo.jpg'
 
 const appInfo = playlist.app
 const playableItems = computed<PlaylistItem[]>(() => {
@@ -50,9 +51,14 @@ const isPlaying = ref(false)
 const isWaiting = ref(false)
 const isPlayerOpen = ref(false)
 const pageTopPadding = ref(40)
+const panelDragY = ref(0)
+const isPanelDragging = ref(false)
+const discRotateDeg = ref(0)
 
 let audio: any
 let lastSavedAt = 0
+let panelTouchStartY = 0
+let discRotateTimer: ReturnType<typeof setInterval> | undefined
 
 const currentItem = computed<PlaylistItem | undefined>(() => {
   return playableItems.value.find(item => item.id === currentId.value) || playableItems.value[0]
@@ -86,15 +92,18 @@ function createAudioManager() {
   audio.onPlay?.(() => {
     isPlaying.value = true
     isWaiting.value = false
+    startDiscRotate()
   })
 
   audio.onPause?.(() => {
     isPlaying.value = false
+    stopDiscRotate()
     savePlaybackState()
   })
 
   audio.onStop?.(() => {
     isPlaying.value = false
+    stopDiscRotate()
     savePlaybackState()
   })
 
@@ -114,12 +123,14 @@ function createAudioManager() {
   })
 
   audio.onEnded?.(() => {
+    stopDiscRotate()
     playNext(true)
   })
 
   audio.onError?.(() => {
     isPlaying.value = false
     isWaiting.value = false
+    stopDiscRotate()
     uni.showToast({
       title: '音频加载失败',
       icon: 'none',
@@ -186,7 +197,7 @@ function setAudioMetadata(item: PlaylistItem, startAt = 0) {
   manager.title = item.title
   manager.singer = appInfo.author
   manager.epname = appInfo.name
-  manager.coverImgUrl = item.cover || appInfo.cover || ''
+  manager.coverImgUrl = item.cover || appInfo.cover || DEFAULT_COVER
   manager.webUrl = ''
   manager.startTime = Math.max(0, Math.floor(startAt))
 
@@ -211,6 +222,9 @@ function playItem(item: PlaylistItem, startAt = 0) {
   currentTime.value = Math.max(0, Math.floor(startAt))
   duration.value = item.duration
   isWaiting.value = true
+  if (startAt === 0) {
+    discRotateDeg.value = 0
+  }
 
   if (manager.src === item.audioUrl) {
     if (startAt > 0) {
@@ -277,11 +291,57 @@ function onSeekChange(event: any) {
 }
 
 function openPlayer() {
+  panelDragY.value = 0
   isPlayerOpen.value = true
 }
 
 function closePlayer() {
+  panelDragY.value = 0
+  isPanelDragging.value = false
   isPlayerOpen.value = false
+}
+
+function startDiscRotate() {
+  if (discRotateTimer) {
+    return
+  }
+
+  discRotateTimer = setInterval(() => {
+    discRotateDeg.value = (discRotateDeg.value + 3) % 360
+  }, 50)
+}
+
+function stopDiscRotate() {
+  if (!discRotateTimer) {
+    return
+  }
+
+  clearInterval(discRotateTimer)
+  discRotateTimer = undefined
+}
+
+function onPanelTouchStart(event: TouchEvent) {
+  panelTouchStartY = event.touches?.[0]?.clientY || 0
+  isPanelDragging.value = true
+}
+
+function onPanelTouchMove(event: TouchEvent) {
+  if (!isPanelDragging.value) {
+    return
+  }
+
+  const currentY = event.touches?.[0]?.clientY || 0
+  panelDragY.value = Math.max(0, currentY - panelTouchStartY)
+}
+
+function onPanelTouchEnd() {
+  if (panelDragY.value > 90) {
+    closePlayer()
+    return
+  }
+
+  panelDragY.value = 0
+  isPanelDragging.value = false
 }
 
 function formatTime(seconds: number) {
@@ -316,21 +376,20 @@ onHide(() => {
 })
 
 onUnload(() => {
+  stopDiscRotate()
   savePlaybackState()
 })
 </script>
 
 <template>
-  <view class="page" :style="{ paddingTop: `${pageTopPadding}px` }">
+  <view class="page" :style="{ paddingTop: `${pageTopPadding}px`, paddingBottom: `4rem` }">
     <view class="hero">
       <view class="hero-cover">
-        <image v-if="appInfo.cover" :src="appInfo.cover" mode="aspectFill" class="cover-image" />
-        <text v-else class="cover-text">九</text>
+        <image :src="appInfo.cover || DEFAULT_COVER" mode="aspectFill" class="cover-image" />
       </view>
 
       <view class="hero-content">
         <text class="app-title">{{ appInfo.name }}</text>
-        <text class="app-author">{{ appInfo.author }}原创播客</text>
         <text class="app-description">{{ appInfo.description }}</text>
       </view>
     </view>
@@ -365,19 +424,18 @@ onUnload(() => {
     <view class="mini-player-spacer" />
 
     <view v-if="currentItem" class="mini-player">
-      <view class="mini-progress">
-        <view class="mini-progress-inner" :style="{ width: `${progressPercent}%` }" />
-      </view>
-
       <view class="mini-body" @tap="openPlayer">
-        <view class="mini-cover">
-          <image v-if="currentItem.cover || appInfo.cover" :src="currentItem.cover || appInfo.cover" mode="aspectFill" class="cover-image" />
-          <text v-else class="mini-cover-text">九</text>
+        <view class="mini-disc" :style="{ transform: `rotate(${discRotateDeg}deg)` }">
+          <image :src="currentItem.cover || appInfo.cover || DEFAULT_COVER" mode="aspectFill" class="disc-image" />
+          <view class="disc-center" />
         </view>
 
         <view class="mini-info">
           <text class="mini-title">{{ currentItem.title }}</text>
           <text class="mini-time">{{ formatTime(currentTime) }} / {{ formatTime(duration || currentItem.duration) }}</text>
+          <view class="mini-progress">
+            <view class="mini-progress-inner" :style="{ width: `${progressPercent}%` }" />
+          </view>
         </view>
 
         <view class="mini-button" @tap.stop="togglePlay">
@@ -387,12 +445,20 @@ onUnload(() => {
     </view>
 
     <view v-if="isPlayerOpen && currentItem" class="player-mask" @tap="closePlayer">
-      <view class="player-panel" @tap.stop>
+      <view
+        class="player-panel"
+        :class="{ dragging: isPanelDragging }"
+        :style="{ transform: `translateY(${panelDragY}px)` }"
+        @tap.stop
+        @touchstart="onPanelTouchStart"
+        @touchmove.stop.prevent="onPanelTouchMove"
+        @touchend="onPanelTouchEnd"
+        @touchcancel="onPanelTouchEnd"
+      >
         <view class="panel-handle" />
 
         <view class="player-cover">
-          <image v-if="currentItem.cover || appInfo.cover" :src="currentItem.cover || appInfo.cover" mode="aspectFill" class="cover-image" />
-          <text v-else class="player-cover-text">九</text>
+          <image :src="currentItem.cover || appInfo.cover || DEFAULT_COVER" mode="aspectFill" class="cover-image" />
         </view>
 
         <text class="player-title">{{ currentItem.title }}</text>
@@ -408,17 +474,21 @@ onUnload(() => {
           :value="Math.floor(currentTime)"
           :max="Math.floor(duration || currentItem.duration)"
           :block-size="18"
-          activeColor="#23483f"
-          backgroundColor="#d6ddd9"
+          active-color="#23483f"
+          background-color="#d6ddd9"
           @change="onSeekChange"
         />
 
         <view class="controls">
-          <button class="control-button side" :disabled="!hasPrevious" @tap="playPrevious">‹</button>
+          <button class="control-button side" :disabled="!hasPrevious" @tap="playPrevious">
+            ‹
+          </button>
           <button class="control-button primary" @tap="togglePlay">
             {{ isWaiting ? '…' : isPlaying ? 'Ⅱ' : '▶' }}
           </button>
-          <button class="control-button side" :disabled="!hasNext" @tap="playNext(false)">›</button>
+          <button class="control-button side" :disabled="!hasNext" @tap="playNext(false)">
+            ›
+          </button>
         </view>
 
         <view class="play-mode">
@@ -447,7 +517,6 @@ onUnload(() => {
 }
 
 .hero-cover,
-.mini-cover,
 .player-cover {
   display: flex;
   align-items: center;
@@ -458,24 +527,14 @@ onUnload(() => {
 }
 
 .hero-cover {
-  width: 140rpx;
-  height: 140rpx;
+  width: 120rpx;
+  height: 120rpx;
   border-radius: 16rpx;
 }
 
 .cover-image {
   width: 100%;
   height: 100%;
-}
-
-.cover-text,
-.player-cover-text {
-  color: #ffffff;
-  font-weight: 700;
-}
-
-.cover-text {
-  font-size: 72rpx;
 }
 
 .hero-content {
@@ -605,23 +664,27 @@ onUnload(() => {
 }
 
 .mini-player-spacer {
-  height: 164rpx;
+  height: 204rpx;
 }
 
 .mini-player {
   position: fixed;
-  right: 24rpx;
-  bottom: calc(22rpx + env(safe-area-inset-bottom));
-  left: 24rpx;
+  right: 22rpx;
+  bottom: calc(24rpx + env(safe-area-inset-bottom));
+  left: 22rpx;
   overflow: hidden;
   border: 1rpx solid #dfe5df;
-  border-radius: 20rpx;
+  border-radius: 24rpx;
   background: #fffffb;
   box-shadow: 0 18rpx 46rpx rgba(35, 72, 63, 0.14);
 }
 
 .mini-progress {
-  height: 5rpx;
+  overflow: hidden;
+  width: 100%;
+  height: 10rpx;
+  margin-top: 18rpx;
+  border-radius: 999rpx;
   background: #dfe5df;
 }
 
@@ -633,21 +696,39 @@ onUnload(() => {
 .mini-body {
   display: flex;
   align-items: center;
-  gap: 18rpx;
-  min-height: 112rpx;
-  padding: 16rpx 18rpx;
+  gap: 24rpx;
+  min-height: 152rpx;
+  padding: 24rpx 24rpx;
 }
 
-.mini-cover {
-  width: 78rpx;
-  height: 78rpx;
-  border-radius: 12rpx;
+.mini-disc {
+  position: relative;
+  width: 112rpx;
+  height: 112rpx;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 4rpx solid #23483f;
+  border-radius: 50%;
+  background: #23483f;
 }
 
-.mini-cover-text {
-  color: #ffffff;
-  font-size: 42rpx;
-  font-weight: 700;
+.disc-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.disc-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 34rpx;
+  height: 34rpx;
+  box-sizing: border-box;
+  border: 4rpx solid rgba(35, 72, 63, 0.55);
+  border-radius: 50%;
+  background: #ffffff;
+  transform: translate(-50%, -50%);
 }
 
 .mini-info {
@@ -660,29 +741,29 @@ onUnload(() => {
 .mini-title {
   overflow: hidden;
   color: #171b18;
-  font-size: 28rpx;
+  font-size: 32rpx;
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .mini-time {
-  margin-top: 8rpx;
+  margin-top: 10rpx;
   color: #68716c;
-  font-size: 23rpx;
+  font-size: 25rpx;
 }
 
 .mini-button {
   display: flex;
-  width: 72rpx;
-  height: 72rpx;
+  width: 92rpx;
+  height: 92rpx;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   border-radius: 50%;
   background: #23483f;
   color: #ffffff;
-  font-size: 28rpx;
+  font-size: 34rpx;
   font-weight: 700;
 }
 
@@ -704,6 +785,12 @@ onUnload(() => {
   padding: 18rpx 36rpx calc(42rpx + env(safe-area-inset-bottom));
   border-radius: 28rpx 28rpx 0 0;
   background: #fffffb;
+  transition: transform 180ms ease-out;
+  will-change: transform;
+}
+
+.player-panel.dragging {
+  transition: none;
 }
 
 .panel-handle {
@@ -720,10 +807,6 @@ onUnload(() => {
   margin: 0 auto 34rpx;
   border-radius: 24rpx;
   box-shadow: 0 22rpx 60rpx rgba(35, 72, 63, 0.18);
-}
-
-.player-cover-text {
-  font-size: 168rpx;
 }
 
 .player-title {
