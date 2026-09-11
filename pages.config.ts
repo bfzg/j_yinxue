@@ -8,7 +8,6 @@ export default defineUniPages({
     navigationBarTextStyle: 'black',
     backgroundColor: '#f7f6f1',
   },
-  requiredBackgroundModes: ['audio'],
   easycom: {
     autoscan: true,
     custom: {
@@ -16,6 +15,6 @@ export default defineUniPages({
       '^(?!z-paging-refresh|z-paging-load-more)z-paging(.*)':
         'z-paging/components/z-paging$1/z-paging$1.vue',
       '^t-(.*)': '@tdesign/uniapp/$1/$1.vue',
-},
+    },
   },
 })

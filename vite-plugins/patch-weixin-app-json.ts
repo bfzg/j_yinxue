@@ -23,7 +23,6 @@ export function patchWeixinAppJsonPlugin(): Plugin {
         }
 
         const appJson = JSON.parse(fs.readFileSync(appJsonPath, 'utf8'))
-        appJson.requiredBackgroundModes = ['audio']
         fs.writeFileSync(appJsonPath, `${JSON.stringify(appJson, null, 2)}\n`)
       },
     },

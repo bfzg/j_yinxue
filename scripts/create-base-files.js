@@ -19,13 +19,21 @@ const pages = {
       style: {
         navigationStyle: 'custom',
         navigationBarTitleText: '',
-        navigationBarBackgroundColor: '#f7f6f1',
+        navigationBarBackgroundColor: '#f3f5f2',
+        navigationBarTextStyle: 'black',
+      },
+    },
+    {
+      path: 'pages/article/article',
+      style: {
+        navigationStyle: 'custom',
+        navigationBarTitleText: '',
+        navigationBarBackgroundColor: '#ffffff',
         navigationBarTextStyle: 'black',
       },
     },
   ],
   subPackages: [],
-  requiredBackgroundModes: ['audio'],
 }
 
 // 使用修复后的 __dirname 来解析文件路径
