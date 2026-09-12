@@ -23,7 +23,8 @@ interface Article {
   category: string
   cover: string
   publishedAt: string
-  content: string[]
+  articleUrl: string
+  audioUrl: string
   enabled: boolean
   sort: number
 }
@@ -41,7 +42,7 @@ const articleItems = computed<Article[]>(() => {
       if (!keyword) {
         return true
       }
-      return `${item.title}${item.summary}${item.content.join(' ')}`.toLowerCase().includes(keyword)
+      return `${item.title}${item.summary}`.toLowerCase().includes(keyword)
     })
     .sort((a, b) => a.sort - b.sort)
 })

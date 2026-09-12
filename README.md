@@ -13,7 +13,8 @@
 - `summary`：文章摘要，显示在首页和详情页开头。
 - `category`：分类，例如 `认知`、`成长`、`教育`。
 - `cover`：预留的封面 HTTPS 地址，可为空。
-- `content`：正文段落数组，每个数组元素是一段文字，不要把整篇内容放成一个超长字符串。
+- `articleUrl`：正文文件地址，建议使用 HTTPS 地址，例如 `https://example.com/articles/ep001.txt`。
+- `audioUrl`：对应音频文件地址，建议使用 HTTPS 地址；当前版本只保存地址，不展示和播放。
 - `sort`：顺序展示排序。
 - `publishedAt`：发布日期。
 - `enabled`：是否展示。
@@ -28,14 +29,14 @@
   "category": "认知",
   "cover": "",
   "publishedAt": "2026-09-11",
-  "content": [
-    "这是第一段正文。",
-    "这是第二段正文。段落之间会自动留出阅读间距。"
-  ],
+  "articleUrl": "https://example.com/articles/ep001.txt",
+  "audioUrl": "https://example.com/audio/ep001.mp3",
   "enabled": true,
   "sort": 1
 }
 ```
+
+正文文件建议使用 UTF-8 编码的 `.txt`，段落之间空一行。文章元数据和正文文件分开维护，修改文章时只需要替换正文文件，不需要把长文本塞进 JSON。
 
 原音频数据仍保留在 `src/static/data/playlist.json`，供后续恢复音频功能时使用；当前文章版首页不会读取或展示音频。
 

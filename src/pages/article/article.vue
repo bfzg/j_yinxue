@@ -21,18 +21,20 @@ interface Article {
   summary: string
   category: string
   publishedAt: string
-  content: string[]
+  articleUrl: string
+  audioUrl: string
   enabled: boolean
   sort: number
 }
 
 const isFavorite = ref(false)
+const articleId = ref('')
+const paragraphs = ref<string[]>([])
+const isLoading = ref(false)
+const loadError = ref('')
 
 const article = computed<Article | undefined>(() => {
-  const pages = getCurrentPages()
-  const route = pages[pages.length - 1] as any
-  const id = route?.options?.id || route?.$page?.options?.id
-  return articles.items.find(item => item.id === id) || articles.items[0]
+  return articles.items.find(item => item.id === articleId.value) || articles.items[0]
 })
 
 function formatDate(value: string) {
@@ -42,6 +44,39 @@ function formatDate(value: string) {
 function goBack() {
   uni.navigateBack()
 }
+
+function loadArticle() {
+  paragraphs.value = []
+  loadError.value = ''
+
+  if (!article.value?.articleUrl) {
+    return
+  }
+
+  isLoading.value = true
+  uni.request({
+    url: article.value.articleUrl,
+    success: (response: any) => {
+      const text = typeof response.data === 'string' ? response.data : ''
+      paragraphs.value = text
+        .replace(/\r\n/g, '\n')
+        .split(/\n\s*\n/)
+        .map(paragraph => paragraph.trim())
+        .filter(Boolean)
+    },
+    fail: () => {
+      loadError.value = '正文加载失败，请稍后再试。'
+    },
+    complete: () => {
+      isLoading.value = false
+    },
+  })
+}
+
+onLoad((options) => {
+  articleId.value = options?.id || articles.items[0]?.id || ''
+  loadArticle()
+})
 
 function toggleFavorite() {
   isFavorite.value = !isFavorite.value
@@ -82,10 +117,16 @@ function shareArticle() {
 
     <view class="article-body">
       <text v-if="article.summary" class="summary">{{ article.summary }}</text>
-      <text v-if="!article.content.length" class="empty-content">
+      <text v-if="isLoading" class="empty-content">
+        正文加载中……
+      </text>
+      <text v-else-if="loadError" class="empty-content">
+        {{ loadError }}
+      </text>
+      <text v-else-if="!paragraphs.length" class="empty-content">
         正文内容正在整理，后续将持续更新。
       </text>
-      <text v-for="(paragraph, index) in article.content" :key="`${article.id}-${index}`" class="paragraph">
+      <text v-for="(paragraph, index) in paragraphs" :key="`${article.id}-${index}`" class="paragraph">
         {{ paragraph }}
       </text>
     </view>
