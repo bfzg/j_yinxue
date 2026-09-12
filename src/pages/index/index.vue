@@ -98,7 +98,6 @@ function formatDate(value: string) {
       <view>
         <text class="section-title">共 {{ articleItems.length }} 篇</text>
       </view>
-      <text class="section-note">按时间更新</text>
     </view>
 
     <view v-if="articleItems.length" class="article-list">
@@ -263,13 +262,8 @@ function formatDate(value: string) {
 }
 
 .section-title {
-  font-size: 38rpx;
+  font-size: 22rpx;
   font-weight: 800;
-}
-
-.section-note {
-  color: #8a958e;
-  font-size: 23rpx;
 }
 
 .article-list {

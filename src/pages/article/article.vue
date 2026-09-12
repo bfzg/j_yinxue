@@ -32,6 +32,7 @@ const articleId = ref('')
 const paragraphs = ref<string[]>([])
 const isLoading = ref(false)
 const loadError = ref('')
+const pageTopPadding = ref(0)
 
 const article = computed<Article | undefined>(() => {
   return articles.items.find(item => item.id === articleId.value) || articles.items[0]
@@ -43,6 +44,11 @@ function formatDate(value: string) {
 
 function goBack() {
   uni.navigateBack()
+}
+
+function setPageTopPadding() {
+  const windowInfo = (uni as any).getWindowInfo?.() || uni.getSystemInfoSync()
+  pageTopPadding.value = Number(windowInfo.statusBarHeight || 0)
 }
 
 function loadArticle() {
@@ -74,6 +80,7 @@ function loadArticle() {
 }
 
 onLoad((options) => {
+  setPageTopPadding()
   articleId.value = options?.id || articles.items[0]?.id || ''
   loadArticle()
 })
@@ -95,7 +102,7 @@ function shareArticle() {
 </script>
 
 <template>
-  <view v-if="article" class="page">
+  <view v-if="article" class="page" :style="{ paddingTop: `${pageTopPadding}px` }">
     <view class="topbar">
       <view class="back-button" @tap="goBack">
         <text>‹</text>
@@ -159,8 +166,7 @@ function shareArticle() {
 
 .topbar {
   display: flex;
-  height: 104rpx;
-  align-items: center;
+  align-items: end;
   justify-content: space-between;
 }
 
@@ -209,6 +215,7 @@ function shareArticle() {
 
 .meta {
   display: flex;
+  align-items: center;
   gap: 24rpx;
   margin-top: 24rpx;
   color: #99a39d;
