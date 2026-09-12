@@ -70,31 +70,23 @@ function formatDate(value: string) {
       <view class="search-box" :class="{ focused: isSearchFocused }">
         <text class="search-icon">⌕</text>
         <input
-          v-model="searchText"
-          class="search-input"
-          confirm-type="search"
-          placeholder="搜索文章标题或关键词"
-          placeholder-class="search-placeholder"
-          @focus="isSearchFocused = true"
-          @blur="isSearchFocused = false"
+          v-model="searchText" class="search-input" confirm-type="search" placeholder="搜索文章"
+          placeholder-class="search-placeholder" @focus="isSearchFocused = true" @blur="isSearchFocused = false"
         >
         <text v-if="searchText" class="clear-button" @tap="searchText = ''">×</text>
       </view>
     </view>
 
     <view class="intro">
-      <text class="headline">把想明白的事，写下来</text>
+      <text class="headline">九哥隐学</text>
       <text class="intro-copy">用一段安静的阅读时间，整理认知，也整理自己。</text>
     </view>
 
     <scroll-view class="category-scroll" scroll-x :show-scrollbar="false">
       <view class="category-list">
         <text
-          v-for="category in categories"
-          :key="category"
-          class="category-item"
-          :class="{ selected: activeCategory === category }"
-          @tap="activeCategory = category"
+          v-for="category in categories" :key="category" class="category-item"
+          :class="{ selected: activeCategory === category }" @tap="activeCategory = category"
         >
           {{ category }}
         </text>
@@ -109,12 +101,7 @@ function formatDate(value: string) {
     </view>
 
     <view v-if="articleItems.length" class="article-list">
-      <view
-        v-for="(article, index) in articleItems"
-        :key="article.id"
-        class="article-card"
-        @tap="openArticle(article)"
-      >
+      <view v-for="(article, index) in articleItems" :key="article.id" class="article-card" @tap="openArticle(article)">
         <view class="article-number">
           {{ String(index + 1).padStart(2, '0') }}
         </view>
@@ -160,7 +147,7 @@ function formatDate(value: string) {
 .intro {
   display: flex;
   flex-direction: column;
-  padding: 20rpx 0 0rpx;
+  padding: 30rpx 0 0rpx;
 }
 
 .headline {
@@ -182,7 +169,7 @@ function formatDate(value: string) {
 .search-box {
   display: flex;
   align-items: center;
-  width: 230rpx;
+  width: 260rpx;
   height: 72rpx;
   box-sizing: border-box;
   padding: 0 24rpx;
@@ -212,7 +199,6 @@ function formatDate(value: string) {
   margin-left: 12rpx;
   color: #18221e;
   font-size: 28rpx;
-  width: 250rpx;
 }
 
 .search-placeholder {
@@ -241,7 +227,8 @@ function formatDate(value: string) {
 .category-item {
   position: relative;
   color: #89938d;
-  font-size: 27rpx;
+  font-size: 32rpx;
+  font-weight: 500;
   line-height: 1.6;
 }
 
@@ -306,15 +293,11 @@ function formatDate(value: string) {
 }
 
 .article-number {
-  width: 54rpx;
-  height: 54rpx;
   flex-shrink: 0;
   border-radius: 50%;
-  background: #e8efeb;
   color: #1f5146;
   font-size: 22rpx;
   font-weight: 700;
-  line-height: 54rpx;
   text-align: center;
 }
 
@@ -353,6 +336,7 @@ function formatDate(value: string) {
 
 .read-link {
   display: flex;
+  justify-content: end;
   align-items: center;
   gap: 8rpx;
   margin-top: 20rpx;
