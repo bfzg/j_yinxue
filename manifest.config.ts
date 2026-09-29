@@ -119,6 +119,8 @@ export default defineManifestConfig({
   /* 小程序特有相关 */
   'mp-weixin': {
     appid: VITE_WX_APPID,
+    // 声明背景音频能力，微信退出前台后可继续播放。
+    requiredBackgroundModes: ['audio'],
     setting: {
       urlCheck: false,
       // 是否启用 ES6 转 ES5

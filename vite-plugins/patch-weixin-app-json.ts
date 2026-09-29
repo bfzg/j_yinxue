@@ -23,6 +23,12 @@ export function patchWeixinAppJsonPlugin(): Plugin {
         }
 
         const appJson = JSON.parse(fs.readFileSync(appJsonPath, 'utf8'))
+
+        // uni-app 当前构建链路可能不会把 manifest 里的该字段透传到 app.json，这里兜底写入。
+        appJson.requiredBackgroundModes = Array.from(
+          new Set([...(appJson.requiredBackgroundModes || []), 'audio']),
+        )
+
         fs.writeFileSync(appJsonPath, `${JSON.stringify(appJson, null, 2)}\n`)
       },
     },

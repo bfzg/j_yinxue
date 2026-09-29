@@ -47,4 +47,4 @@ pnpm install
 pnpm dev:mp-weixin
 ```
 
-当前版本已移除微信后台音频声明和播放器入口，构建产物不再包含 `requiredBackgroundModes: ['audio']`。
+文章阅读页支持微信背景音频播放，构建产物包含 `requiredBackgroundModes: ['audio']`。

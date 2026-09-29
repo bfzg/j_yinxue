@@ -126,6 +126,7 @@
     "@dcloudio/uni-mp-weixin": "3.0.0-4070620250821001",
     "@dcloudio/uni-mp-xhs": "3.0.0-4070620250821001",
     "@dcloudio/uni-quickapp-webview": "3.0.0-4070620250821001",
+    "@tdesign/uniapp": "latest",
     "abortcontroller-polyfill": "^1.7.8",
     "alova": "^3.3.3",
     "dayjs": "1.11.10",
@@ -134,8 +135,7 @@
     "vue": "^3.4.21",
     "vue-i18n": "9.1.9",
     "vue-router": "4.5.1",
-    "z-paging": "2.8.7",
-    "@tdesign/uniapp": "latest"
+    "z-paging": "2.8.7"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
@@ -146,6 +146,7 @@
     "@dcloudio/uni-stacktracey": "3.0.0-4070620250821001",
     "@dcloudio/vite-plugin-uni": "3.0.0-4070620250821001",
     "@iconify-json/carbon": "^1.2.4",
+    "@iconify-json/lucide": "^1.2.137",
     "@iconify/utils": "^3.0.2",
     "@types/node": "^20.17.9",
     "@uni-helper/eslint-config": "0.5.0",
