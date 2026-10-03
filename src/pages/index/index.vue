@@ -55,6 +55,11 @@ const categories = computed(() => [
   ...Array.from(new Set(articles.items.filter(item => item.enabled).map(item => item.category))),
 ])
 
+// 有音频播放时增加底部间距，防止被浮层遮挡
+const listPaddingClass = computed(() => {
+  return audioState.started ? 'pb-48' : 'pb-36'
+})
+
 function openArticle(article: Article) {
   uni.navigateTo({
     url: `/pages/article/article?id=${article.id}`,
@@ -80,7 +85,7 @@ function openArticle(article: Article) {
     </view>
 
     <scroll-view class="content-scroll" scroll-y :show-scrollbar="false">
-      <view v-if="articleItems.length" class="list-area px-4 pb-36">
+      <view v-if="articleItems.length" class="list-area px-4" :class="listPaddingClass">
         <view class="section-head">
           <view>
             <text class="section-title">共 {{ articleItems.length }} 篇</text>

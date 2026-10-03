@@ -10,6 +10,13 @@ export interface AudioPlayerState {
   error: string
 }
 
+export interface PlaylistItem {
+  id: string
+  title: string
+  audioUrl: string
+  duration?: number
+}
+
 interface AudioEngine {
   src: string
   title?: string
@@ -48,6 +55,29 @@ const state = reactive<AudioPlayerState>({
 let audio: AudioEngine | null = null
 let currentSrc = ''
 let autoPlayOnSrc = false
+
+// ── 播放列表（模块级，跨页面持久） ──
+const playlistState = reactive({
+  playlist: [] as PlaylistItem[],
+  currentIndex: -1,
+})
+
+const hasNext = computed(() => {
+  return playlistState.currentIndex >= 0
+    && playlistState.currentIndex < playlistState.playlist.length - 1
+})
+
+const hasPrev = computed(() => {
+  return playlistState.currentIndex > 0
+})
+
+const currentPlaylistItem = computed(() => {
+  const i = playlistState.currentIndex
+  if (i >= 0 && i < playlistState.playlist.length) {
+    return playlistState.playlist[i]
+  }
+  return null
+})
 
 const progress = computed(() => {
   if (!state.duration) {
@@ -98,6 +128,11 @@ function createAudio() {
     state.playing = false
     state.currentTime = state.duration
     state.loading = false
+
+    // 自动播放下一首
+    if (hasNext.value) {
+      setTimeout(() => playNext(), 500)
+    }
   })
 
   engine.onTimeUpdate(() => {
@@ -170,6 +205,11 @@ function play(getSrc: () => string, getTitle: () => string) {
 
   if (!src) {
     state.error = '这篇文章暂时没有音频。'
+
+    // 跳过无音频条目，自动播下一首
+    if (playlistState.playlist.length > 0 && hasNext.value) {
+      setTimeout(() => playNext(), 300)
+    }
     return
   }
 
@@ -207,6 +247,42 @@ export function useAudioPlayerState() {
   return state
 }
 
+export function usePlaylistState() {
+  return { playlistState, hasNext, hasPrev, currentPlaylistItem }
+}
+
+// ── 播放列表控制 ──
+export function setPlaylist(items: PlaylistItem[], startIndex: number = 0) {
+  playlistState.playlist = items
+  playlistState.currentIndex = startIndex
+}
+
+export function playNext() {
+  if (!hasNext.value) return
+  const nextIndex = playlistState.currentIndex + 1
+  const item = playlistState.playlist[nextIndex]
+  playlistState.currentIndex = nextIndex
+  currentSrc = ''
+  play(() => item.audioUrl, () => item.title)
+}
+
+export function playPrev() {
+  if (!hasPrev.value) return
+  const prevIndex = playlistState.currentIndex - 1
+  const item = playlistState.playlist[prevIndex]
+  playlistState.currentIndex = prevIndex
+  currentSrc = ''
+  play(() => item.audioUrl, () => item.title)
+}
+
+export function playByIndex(index: number) {
+  if (index < 0 || index >= playlistState.playlist.length) return
+  const item = playlistState.playlist[index]
+  playlistState.currentIndex = index
+  currentSrc = ''
+  play(() => item.audioUrl, () => item.title)
+}
+
 export function useAudioPlayer(getSrc: () => string, getTitle: () => string = () => '') {
   watch(getSrc, (src) => {
     syncState(src)
@@ -229,6 +305,46 @@ export function useAudioPlayer(getSrc: () => string, getTitle: () => string = ()
         return
       }
 
+      const time = Math.min(state.duration, Math.max(0, value))
+      audio.seek(time)
+      state.currentTime = time
+    },
+    destroy: releaseAudio,
+  }
+}
+
+
+export function useAudioPlayerWithPlaylist() {
+  return {
+    state,
+    progress,
+    hasNext,
+    hasPrev,
+    currentPlaylistItem,
+    play: () => {
+      const item = currentPlaylistItem.value
+      if (item) {
+        currentSrc = ''
+        play(() => item.audioUrl, () => item.title)
+      }
+    },
+    pause: () => audio?.pause?.(),
+    toggle: () => {
+      if (state.playing && state.started) {
+        audio?.pause?.()
+        return
+      }
+      const item = currentPlaylistItem.value
+      if (item) {
+        currentSrc = ''
+        play(() => item.audioUrl, () => item.title)
+      }
+    },
+    playNext,
+    playPrev,
+    playByIndex,
+    seek: (value: number) => {
+      if (!audio || !state.duration) return
       const time = Math.min(state.duration, Math.max(0, value))
       audio.seek(time)
       state.currentTime = time
