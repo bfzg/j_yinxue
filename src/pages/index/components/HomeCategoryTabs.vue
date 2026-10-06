@@ -43,6 +43,7 @@ const emit = defineEmits<{
 
 .category-item {
   position: relative;
+  flex-shrink: 0;
   color: #89938d;
   font-size: 32rpx;
   font-weight: 500;

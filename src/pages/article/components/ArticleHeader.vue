@@ -3,11 +3,16 @@ defineOptions({
   name: 'ArticleHeader',
 })
 
-defineProps<{
+const props = withDefaults(defineProps<{
   category: string
   title: string
   publishedAt: string
-}>()
+  column?: string
+  source?: string
+}>(), {
+  column: '',
+  source: '',
+})
 
 function formatDate(value: string) {
   return value ? value.replace(/-/g, '.') : '待更新'
@@ -16,11 +21,11 @@ function formatDate(value: string) {
 
 <template>
   <view class="article-head">
-    <text class="category">{{ category }}</text>
-    <text class="title">{{ title }}</text>
+    <text class="category">{{ props.column || props.category }}</text>
+    <text class="title">{{ props.title }}</text>
     <view class="meta">
-      <text>{{ formatDate(publishedAt) }}</text>
-      <text>九哥隐学</text>
+      <text>{{ formatDate(props.publishedAt) }}</text>
+      <text v-if="props.source">{{ props.source }}</text>
     </view>
   </view>
 </template>

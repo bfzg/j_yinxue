@@ -1,13 +1,14 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
 import articles from '@/static/data/articles.json'
+import { dropDuplicateLead, parseArticleMarkdown, splitSourceFooter } from './markdown'
 import playlist from '@/static/data/playlist.json'
 import ArticleActions from './components/ArticleActions.vue'
 import ArticleBody from './components/ArticleBody.vue'
 import ArticleHeader from './components/ArticleHeader.vue'
 import ArticleTopbar from './components/ArticleTopbar.vue'
 import { useAudioPlayerState, setPlaylist, useAudioPlayerWithPlaylist } from '@/composables/useAudioPlayer'
-import type { Article } from '@/types/article'
+import type { Article, ArticleBlock } from '@/types/article'
 import type { PlaylistItem } from '@/composables/useAudioPlayer'
 
 defineOptions({
@@ -24,7 +25,8 @@ definePage({
 })
 
 const articleId = ref('')
-const paragraphs = ref<string[]>([])
+const blocks = ref<ArticleBlock[]>([])
+const footer = ref<ArticleBlock[]>([])
 const isLoading = ref(false)
 const loadError = ref('')
 const pageTopPadding = ref(0)
@@ -35,10 +37,28 @@ const article = computed<Article | undefined>(() => {
 
 const { state: audioState, toggle, playByIndex } = useAudioPlayerWithPlaylist()
 
-// 构建播放列表（按 sort 排序）
+interface PlaylistRecord {
+  id: string
+  title: string
+  audioUrl: string
+  duration?: number
+  sort?: number
+  enabled?: boolean
+  columnId?: string
+}
+
+const allPlaylistItems = (playlist as unknown as { items: PlaylistRecord[] }).items
+
+// 连播只在同一栏目里跳转，否则「下一集」会串到别的系列
 const playlistItems = computed<PlaylistItem[]>(() => {
-  return playlist.items
-    .filter(item => item.enabled !== false)
+  const enabled = allPlaylistItems.filter(item => item.enabled !== false)
+  const columnId = article.value?.columnId
+  const scoped = columnId
+    ? enabled.filter(item => (item.columnId || '') === columnId)
+    : []
+  const list = scoped.length > 1 ? scoped : enabled
+
+  return [...list]
     .sort((a, b) => (a.sort || 0) - (b.sort || 0))
     .map(item => ({
       id: item.id,
@@ -69,13 +89,22 @@ function goBack() {
   uni.navigateBack()
 }
 
+function openColumn() {
+  const columnId = article.value?.columnId
+  if (!columnId) {
+    return
+  }
+  uni.navigateTo({ url: `/pages/column/column?id=${encodeURIComponent(columnId)}` })
+}
+
 function setPageTopPadding() {
   const windowInfo = (uni as any).getWindowInfo?.() || uni.getSystemInfoSync()
   pageTopPadding.value = Number(windowInfo.statusBarHeight || 0)
 }
 
 function loadArticle() {
-  paragraphs.value = []
+  blocks.value = []
+  footer.value = []
   loadError.value = ''
 
   if (!article.value?.articleUrl) {
@@ -85,13 +114,23 @@ function loadArticle() {
   isLoading.value = true
   uni.request({
     url: article.value.articleUrl,
+    // 正文是 .txt，部分端会按二进制返回，兜底成字符串再解析
+    dataType: 'text',
+    responseType: 'text',
     success: (response: any) => {
-      const text = typeof response.data === 'string' ? response.data : ''
-      paragraphs.value = text
-        .replace(/\r\n/g, '\n')
-        .split(/\n\s*\n/)
-        .map(paragraph => paragraph.trim())
-        .filter(Boolean)
+      const raw = typeof response.data === 'string'
+        ? response.data
+        : String(response.data ?? '')
+      const parsed = dropDuplicateLead(parseArticleMarkdown(raw), {
+        title: article.value?.title,
+        summary: article.value?.summary,
+      })
+      const split = splitSourceFooter(parsed)
+      blocks.value = split.body
+      footer.value = split.footer
+      if (!split.body.length) {
+        loadError.value = '正文内容正在整理，请稍后再试。'
+      }
     },
     fail: () => {
       loadError.value = '正文加载失败，请稍后再试。'
@@ -101,6 +140,15 @@ function loadArticle() {
     },
   })
 }
+
+// 栏目标题优先展示，例如「王立群读汉武帝 · 第 35 集」
+const columnLabel = computed(() => {
+  const a = article.value
+  if (!a?.columnName) {
+    return a?.category || ''
+  }
+  return a.episodeNo ? `${a.columnName} · 第 ${a.episodeNo} 集` : a.columnName
+})
 
 onLoad((options) => {
   setPageTopPadding()
@@ -116,6 +164,8 @@ onLoad((options) => {
       :category="article.category"
       :title="article.title"
       :published-at="article.publishedAt"
+      :column="columnLabel"
+      :source="article.accountName"
     />
 
     <view class="rule" />
@@ -145,10 +195,17 @@ onLoad((options) => {
     <ArticleBody
       :article-id="article.id"
       :summary="article.summary"
-      :paragraphs="paragraphs"
+      :blocks="blocks"
+      :footer="footer"
       :is-loading="isLoading"
       :load-error="loadError"
     />
+
+    <view v-if="article.columnId && article.columnName" class="column-link" @tap="openColumn">
+      <view class="column-link-icon i-lucide-library" />
+      <text class="column-link-text">{{ article.columnName }} · 全部剧集</text>
+      <view class="column-link-arrow i-lucide-chevron-right" />
+    </view>
 
     <ArticleActions />
 
@@ -185,6 +242,39 @@ onLoad((options) => {
 .listen-icon {
   width: 38rpx;
   height: 38rpx;
+}
+
+.column-link {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  margin-top: 54rpx;
+  padding: 26rpx 28rpx;
+  border: 1rpx solid #e4e9e4;
+  border-radius: 16rpx;
+  background: #f7f9f7;
+}
+
+.column-link:active {
+  background: #eef4ef;
+}
+
+.column-link-icon,
+.column-link-arrow {
+  flex-shrink: 0;
+  width: 30rpx;
+  height: 30rpx;
+  color: #1f5146;
+}
+
+.column-link-text {
+  overflow: hidden;
+  flex: 1;
+  color: #1f5146;
+  font-size: 26rpx;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .end-note {

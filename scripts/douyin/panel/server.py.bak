@@ -1,0 +1,696 @@
+"""
+九哥隐学 - Pipeline 管理面板后端
+
+一个轻量级 FastAPI 服务，提供:
+  1. Pipeline 控制面板 (HTML)
+  2. REST API: 查看状态、触发任务
+
+启动: uvicorn panel.server:app --reload --port 8765
+"""
+import json
+import sys
+import subprocess
+from pathlib import Path
+from datetime import datetime
+from typing import Optional
+
+import uvicorn
+from fastapi import FastAPI, Query, HTTPException
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
+
+# 确保能找到 douyin 模块
+sys.path.insert(0, str(Path(__file__).parent.parent))
+import config
+
+app = FastAPI(title="九哥隐学 Pipeline 管理面板")
+
+# 项目根路径
+PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
+SCRIPTS_DIR = Path(__file__).parent.parent
+VENV_PYTHON = SCRIPTS_DIR / ".venv" / "bin" / "python"
+
+
+# ========== 数据查询 ==========
+
+def load_json(path: Path) -> dict:
+    if path.exists():
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except:
+            pass
+    return {}
+
+
+def get_pipeline_status() -> dict:
+    """获取完整 pipeline 状态"""
+    metadata = load_json(config.METADATA_FILE)
+    articles_data = load_json(PROJECT_ROOT / "src" / "static" / "data" / "articles.json")
+    playlist_data = load_json(PROJECT_ROOT / "src" / "static" / "data" / "playlist.json")
+
+    # 扫描本地文件
+    audio_files = sorted(config.AUDIO_DIR.glob("*.mp3"))
+    srt_files = sorted(config.SUBTITLES_DIR.glob("*.srt"))
+    article_files = sorted(config.ARTICLES_DIR.glob("*.article.json"))
+    txt_files = sorted(config.ARTICLES_DIR.glob("*.txt"))
+
+    # 文章条目（来自 articles.json）
+    articles = articles_data.get("items", [])
+    playlist_items = playlist_data.get("items", [])
+
+    # 分析状态
+    status = {
+        "videos": {
+            "count": len(list(config.VIDEOS_DIR.rglob("*.mp4"))),
+        },
+        "audio": {
+            "count": len(audio_files),
+            "files": [f.name for f in audio_files[-10:]],
+        },
+        "subtitles": {
+            "count": len(srt_files),
+            "files": [f.name for f in srt_files[-10:]],
+        },
+        "articles": {
+            "count": len(article_files),
+            "published": sum(1 for a in articles if a.get("articleUrl")),
+            "draft": len(article_files) - sum(1 for a in articles if a.get("articleUrl")),
+            "files": [f.name for f in article_files[-10:]],
+        },
+        "playlist": {
+            "count": len(playlist_items),
+            "items": playlist_items[-10:],
+        },
+        "articles_json": {
+            "count": len(articles),
+            "items": articles[-20:],
+        },
+        "metadata": metadata,
+        "pipeline_enabled": config.ARTICLE_ENABLED,
+        "local": {
+            "items": _get_local_files_status(),
+        },
+        "last_update": datetime.now().isoformat(),
+    }
+
+    return status
+
+
+def _get_local_files_status() -> dict:
+    """扫描本地文件，按音频文件建立索引"""
+    import re as _re
+    items = {}
+
+    # 扫描所有 MP3
+    for mp3 in sorted(config.AUDIO_DIR.glob("*.mp3")):
+        base = mp3.stem
+        # 去掉 _video 后缀
+        clean_base = _re.sub(r'_video$', '', base)
+        key = clean_base[:40]  # 截断作为 key
+
+        item = {
+            "audio": str(mp3),
+            "audio_name": mp3.name,
+            "srt": None,
+            "article": None,
+            "article_path": None,
+            "published": False,
+            "title": clean_base,
+        }
+
+        # 查找对应 SRT
+        srt_path = config.SUBTITLES_DIR / (base + ".srt")
+        if not srt_path.exists():
+            srt_path = config.SUBTITLES_DIR / (mp3.stem + ".srt")
+        if srt_path.exists():
+            item["srt"] = str(srt_path)
+
+        # 查找对应文章
+        article_path = config.ARTICLES_DIR / (base + ".article.json")
+        if not article_path.exists():
+            article_path = config.ARTICLES_DIR / (mp3.stem + ".article.json")
+        if article_path.exists():
+            item["article"] = str(article_path)
+            item["article_path"] = str(article_path)
+            try:
+                article_data = json.loads(article_path.read_text(encoding="utf-8"))
+                item["title"] = article_data.get("title", clean_base)
+            except:
+                pass
+
+        # 检查是否已发布（通过 articles.json 检查）
+        try:
+            articles_data = load_json(Path(__file__).parent.parent.parent / "src" / "static" / "data" / "articles.json")
+            for entry in articles_data.get("items", []):
+                if entry.get("audioUrl") and mp3.name in entry.get("audioUrl", ""):
+                    item["published"] = True
+                    break
+        except:
+            pass
+
+        items[clean_base[:30]] = item
+
+    return items
+
+
+
+# ========== API 路由 ==========
+
+@app.get("/api/status")
+def api_status():
+    return get_pipeline_status()
+
+
+@app.post("/api/pipeline/run")
+def run_pipeline(step: str = Query("all", description="执行步骤: scrape/extract/transcribe/article/all")):
+    """触发 pipeline 执行"""
+    env = {}
+    cmd = [str(VENV_PYTHON), str(SCRIPTS_DIR / "main.py"), "--step", step]
+
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=600,
+            env=env,
+        )
+        return {
+            "success": result.returncode == 0,
+            "step": step,
+            "stdout": result.stdout[-2000:],
+            "stderr": result.stderr[-2000:] if result.stderr else "",
+        }
+    except subprocess.TimeoutExpired:
+        return {"success": False, "step": step, "error": "执行超时（>10分钟）"}
+    except Exception as e:
+        return {"success": False, "step": step, "error": str(e)}
+
+
+
+@app.post("/api/pipeline/generate-article")
+def generate_article(srt: str = Query(None, description="指定 SRT 文件名（可选）")):
+    """生成文章"""
+    if srt:
+        srt_path = config.SUBTITLES_DIR / srt
+        if not srt_path.exists():
+            raise HTTPException(status_code=404, detail=f"SRT 文件不存在: {srt}")
+        cmd = [str(VENV_PYTHON), str(SCRIPTS_DIR / "article_writer.py"), str(srt_path)]
+    else:
+        cmd = [str(VENV_PYTHON), str(SCRIPTS_DIR / "article_writer.py"), "--dir", str(config.SUBTITLES_DIR)]
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+        return {
+            "success": result.returncode == 0,
+            "stdout": result.stdout[-2000:],
+            "stderr": result.stderr[-2000:],
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/api/pipeline/publish")
+def publish_article(article_name: str = Query(None, description="article.json 文件名（可选）")):
+    """发布文章到 COS + 更新 JSON"""
+    if article_name:
+        article_path = config.ARTICLES_DIR / article_name
+        if not article_path.exists():
+            raise HTTPException(status_code=404, detail=f"文章文件不存在: {article_name}")
+        cmd = [str(VENV_PYTHON), str(SCRIPTS_DIR / "uploader.py"), str(article_path)]
+    else:
+        # 找最新的未发布文章
+        article_files = sorted(config.ARTICLES_DIR.glob("*.article.json"))
+        if not article_files:
+            raise HTTPException(status_code=404, detail="没有找到未发布的文章")
+        cmd = [str(VENV_PYTHON), str(SCRIPTS_DIR / "uploader.py"), str(article_files[-1])]
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        return {
+            "success": result.returncode == 0,
+            "stdout": result.stdout[-2000:],
+            "stderr": result.stderr[-2000:],
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.get("/api/articles/{article_id}")
+def get_article(article_id: str):
+    """获取单篇文章详情"""
+    articles_data = load_json(PROJECT_ROOT / "src" / "static" / "data" / "articles.json")
+    for item in articles_data.get("items", []):
+        if item.get("id") == article_id:
+            return item
+    raise HTTPException(status_code=404, detail="文章不存在")
+
+
+# ========== 页面路
+@app.get("/api/audio-file")
+def serve_audio(path: str = Query(..., description="MP3 文件路径")):
+    """提供本地音频文件播放"""
+    audio_path = Path(path)
+    if not audio_path.exists() or not audio_path.suffix.lower() in {'.mp3', '.wav', '.m4a'}:
+        from fastapi.responses import PlainTextResponse
+        return PlainTextResponse("文件不存在", status_code=404)
+    return FileResponse(str(audio_path), media_type="audio/mpeg", filename=audio_path.name)
+
+
+@app.get("/api/article-content")
+def get_article_content(path: str = Query(..., description=".article.json 文件路径")):
+    """获取本地文章内容"""
+    article_path = Path(path)
+    if not article_path.exists():
+        return {"error": "文件不存在"}
+    try:
+        data = json.loads(article_path.read_text(encoding="utf-8"))
+        # 查找对应的音频文件
+        audio_name = article_path.stem.replace(".article", "") + ".mp3"
+        audio_path = config.AUDIO_DIR / audio_name
+        if audio_path.exists():
+            data["audio_path"] = str(audio_path)
+
+        # 查找对应 SRT
+        srt_name = article_path.stem.replace(".article", "") + ".srt"
+        srt_path = config.SUBTITLES_DIR / srt_name
+        if srt_path.exists():
+            data["srt_path"] = str(srt_path)
+
+        return {"article": data, "path": str(article_path)}
+    except Exception as e:
+        return {"error": str(e)}
+
+由 ==========
+
+@app.get("/", response_class=HTMLResponse)
+def index():
+    """管理面板主页"""
+    return HTMLResponse(INDEX_HTML)
+
+
+# 内嵌 HTML 模板
+INDEX_HTML = r"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>九哥隐学 · 内容管理面板</title>
+<style>
+:root { --bg: #0f172a; --card: #1e293b; --border: #334155; --text: #e2e8f0; --muted: #94a3b8; --accent: #3b82f6; --success: #22c55e; --warning: #f59e0b; --danger: #ef4444; --accent-dim: rgba(59,130,246,0.15); }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+.container { max-width: 1280px; margin: 0 auto; padding: 20px; }
+.header { display: flex; align-items: center; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid var(--border); margin-bottom: 24px; gap: 12px; }
+.header h1 { font-size: 20px; font-weight: 600; white-space: nowrap; }
+.header .subtitle { color: var(--muted); font-size: 13px; }
+.header-right { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+
+/* Stats grid */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+.card h3 { font-size: 12px; color: var(--muted); margin-bottom: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+.card .value { font-size: 28px; font-weight: 700; line-height: 1.2; display: flex; align-items: baseline; gap: 6px; }
+.card .value-sub { font-size: 13px; font-weight: 400; color: var(--muted); }
+.card .desc { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+/* Sections */
+.section { margin-bottom: 24px; }
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.section-header h2 { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; gap: 4px; padding: 7px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; transition: all 0.15s; text-decoration: none; }
+.btn:hover { background: var(--border); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary:hover { opacity: 0.9; }
+.btn-success { background: var(--success); border-color: var(--success); color: #fff; }
+.btn-warning { background: var(--warning); border-color: var(--warning); color: #000; }
+.btn-sm { padding: 4px 10px; font-size: 11px; }
+.btn-group { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0; }
+
+/* Pipeline bar */
+.pipeline-bar { display: flex; gap: 4px; align-items: stretch; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+.pipeline-step { flex: 1; min-width: 100px; text-align: center; padding: 8px; border-radius: 8px; cursor: pointer; transition: all 0.15s; border: 1px solid transparent; }
+.pipeline-step:hover { background: var(--accent-dim); }
+.pipeline-step .step-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+.pipeline-step .step-label { font-size: 11px; color: var(--muted); }
+.pipeline-step.active { border-color: var(--accent); background: var(--accent-dim); }
+.pipeline-step.done .step-label { color: var(--success); }
+.pipeline-step .arrow { color: var(--border); font-size: 16px; align-self: center; padding: 0 4px; }
+
+/* Pipeline run buttons */
+.pipeline-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+
+/* Table */
+.table-wrap { overflow-x: auto; background: var(--card); border: 1px solid var(--border); border-radius: 10px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; padding: 10px 12px; color: var(--muted); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover { background: rgba(255,255,255,0.03); }
+.cell-status { display: flex; align-items: center; gap: 6px; }
+.status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.status-ok { background: var(--success); }
+.status-missing { background: var(--border); }
+.status-draft { background: var(--warning); }
+.status-progress { background: var(--accent); animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* Tabs */
+.tabs { display: flex; gap: 4px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 4px; margin-bottom: 16px; }
+.tab { padding: 7px 18px; border-radius: 6px; font-size: 13px; cursor: pointer; border: none; background: transparent; color: var(--muted); transition: all 0.15s; }
+.tab.active { background: var(--accent); color: #fff; }
+.tab:hover:not(.active) { color: var(--text); }
+
+/* Output */
+.output-box { background: #020617; border: 1px solid var(--border); border-radius: 8px; padding: 14px; font-family: "SF Mono", Monaco, "Cascadia Code", monospace; font-size: 12px; line-height: 1.6; white-space: pre-wrap; max-height: 320px; overflow-y: auto; display: none; margin-bottom: 16px; }
+
+/* Input */
+.input-group { display: flex; gap: 8px; margin: 12px 0; }
+.input { flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 13px; }
+.input:focus { outline: none; border-color: var(--accent); }
+
+/* Modal */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+.modal-overlay.show { display: flex; }
+.modal { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 28px; max-width: 800px; width: 92%; max-height: 85vh; overflow-y: auto; position: relative; }
+.modal-close { position: sticky; top: 0; float: right; cursor: pointer; color: var(--muted); font-size: 20px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 6px; background: var(--bg); z-index: 1; }
+.modal-close:hover { color: var(--text); background: var(--border); }
+.modal h3 { font-size: 18px; margin-bottom: 8px; line-height: 1.4; }
+.modal .meta { font-size: 12px; color: var(--muted); margin-bottom: 16px; display: flex; gap: 12px; flex-wrap: wrap; }
+.modal .article-body { font-size: 15px; line-height: 1.8; color: var(--text); }
+.modal .article-body h2 { font-size: 18px; margin: 20px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+.modal .article-body h3 { font-size: 16px; margin: 16px 0 8px; }
+.modal .article-body p { margin: 10px 0; }
+.modal .article-body strong { color: #fbbf24; }
+.modal .article-body blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: rgba(59,130,246,0.08); border-radius: 0 6px 6px 0; color: var(--muted); }
+.modal .article-body ul, .modal .article-body ol { padding-left: 24px; margin: 8px 0; }
+.modal .article-body li { margin: 4px 0; }
+
+/* Audio player */
+.audio-player { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin: 12px 0; display: flex; align-items: center; gap: 12px; }
+.audio-player audio { flex: 1; height: 36px; }
+
+@media (max-width: 640px) {
+  .grid { grid-template-columns: repeat(2, 1fr); }
+  .header { flex-direction: column; align-items: flex-start; }
+  .pipeline-step { min-width: 70px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div>
+      <h1>📋 九哥隐学 · 内容管理</h1>
+      <div class="subtitle">Pipeline: 抖音 → 音频 → 字幕 → 文章 → 发布</div>
+    </div>
+    <div class="header-right">
+      <button class="btn" onclick="refreshStatus()">🔄 刷新</button>
+      <span id="lastUpdate" class="subtitle"></span>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid" id="statsGrid">
+    <div class="card"><h3>🎬 视频</h3><div class="value" id="statVideos">-</div><div class="desc">已下载</div></div>
+    <div class="card"><h3>🎵 音频</h3><div class="value" id="statAudio">-</div><div class="desc">已提取 MP3</div></div>
+    <div class="card"><h3>📝 字幕</h3><div class="value" id="statSubtitles">-</div><div class="desc">已转写 SRT</div></div>
+    <div class="card"><h3>📄 文章</h3><div class="value"><span id="statArticlesPub">-</span><span class="value-sub">/ <span id="statArticlesTotal">-</span></span></div><div class="desc">已发布 / 总数</div></div>
+  </div>
+
+  <!-- Pipeline -->
+  <div class="pipeline-actions">
+    <button class="btn btn-primary" onclick="runPipeline('scrape')">⬇️ 爬取视频</button>
+    <button class="btn btn-primary" onclick="runPipeline('extract')">🎵 提取音频</button>
+    <button class="btn btn-primary" onclick="runPipeline('transcribe')">📝 转写字幕</button>
+    <button class="btn btn-primary" onclick="runPipeline('article')">✍️ 生成文章</button>
+    <button class="btn btn-success" onclick="runPipeline('all')">▶️ 完整流程</button>
+    <button class="btn btn-warning" onclick="generateArticle()">📤 批量生成文章</button>
+    <button class="btn btn-success" onclick="publishLatest()">📤 发布最新</button>
+  </div>
+
+  <!-- Output -->
+  <div class="output-box" id="outputBox"></div>
+
+  <!-- Content -->
+  <div class="section">
+    <div class="section-header">
+      <h2>📄 内容列表</h2>
+    </div>
+    <div class="tabs">
+      <button class="tab active" data-tab="local" onclick="switchTab('local', this)">📂 本地文件</button>
+      <button class="tab" data-tab="articles" onclick="switchTab('articles', this)">📖 已发布文章</button>
+      <button class="tab" data-tab="playlist" onclick="switchTab('playlist', this)">🎧 播客列表</button>
+    </div>
+
+    <!-- Local files tab -->
+    <div class="table-wrap" id="tabLocal">
+      <table><thead><tr>
+        <th>#</th><th>音频文件</th><th>字幕</th><th>文章</th><th>已发布</th><th>操作</th>
+      </tr></thead><tbody id="localBody"></tbody></table>
+    </div>
+
+    <!-- Published articles tab -->
+    <div class="table-wrap" id="tabArticles" style="display:none">
+      <table><thead><tr>
+        <th>ID</th><th>标题</th><th>分类</th><th>日期</th><th>音频</th><th>文章</th><th>操作</th>
+      </tr></thead><tbody id="articlesBody"></tbody></table>
+    </div>
+
+    <!-- Playlist tab -->
+    <div class="table-wrap" id="tabPlaylist" style="display:none">
+      <table><thead><tr>
+        <th>ID</th><th>标题</th><th>时长</th><th>日期</th><th>状态</th>
+      </tr></thead><tbody id="playlistBody"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<script>
+async function api(url, opts = {}) {
+  try {
+    const res = await fetch(url, opts);
+    return await res.json();
+  } catch(e) {
+    showOutput('请求失败: ' + e.message);
+    return null;
+  }
+}
+
+function showOutput(text) {
+  const box = document.getElementById('outputBox');
+  const msg = typeof text === 'string' ? text : JSON.stringify(text, null, 2);
+  box.textContent = msg;
+  box.style.display = 'block';
+  box.scrollTop = box.scrollHeight;
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderMarkdown(text) {
+  if (!text) return '';
+  let html = escapeHtml(text);
+  // Headers
+  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  // Bold
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // Italic
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  // Inline code
+  html = html.replace(/`(.+?)`/g, '<code>$1</code>');
+  // Blockquote
+  html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
+  // Unordered list
+  html = html.replace(/^- (.+)$/gm, '<li>$1</li>').replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+  // Ordered list
+  html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+  // Double line break = new paragraph
+  html = html.replace(/\n\n/g, '</p><p>');
+  // Single line break = br
+  html = html.replace(/\n/g, '<br>');
+  return '<p>' + html + '</p>';
+}
+
+async function refreshStatus() {
+  const data = await api('/api/status');
+  if (!data) return;
+  document.getElementById('statVideos').textContent = data.videos.count;
+  document.getElementById('statAudio').textContent = data.audio.count;
+  document.getElementById('statSubtitles').textContent = data.subtitles.count;
+  document.getElementById('statArticlesPub').textContent = data.articles.published;
+  document.getElementById('statArticlesTotal').textContent = data.articles.count;
+  document.getElementById('lastUpdate').textContent = '更新: ' + new Date().toLocaleTimeString('zh-CN');
+
+  // --- Local files tab ---
+  if (data.local && data.local.items) {
+    const localHtml = Object.entries(data.local.items).map(([key, item]) => {
+      const audioExists = item.audio ? '<span class="status-dot status-ok"></span>' : '<span class="status-dot status-missing"></span>';
+      const srtExists = item.srt ? '<span class="status-dot status-ok"></span>' : '<span class="status-dot status-missing"></span>';
+      const articleExists = item.article ? '<span class="status-dot status-ok"></span>' : '<span class="status-dot status-missing"></span>';
+      const pubExists = item.published ? '<span class="status-dot status-ok"></span>已发布' : '<span class="status-dot status-missing"></span>未发布';
+      let title = item.title || item.audio_name || key;
+      return `<tr>
+        <td>${key}</td>
+        <td>${audioExists} ${escapeHtml(item.audio_name || '-')}</td>
+        <td>${srtExists} ${item.srt ? '有' : '无'}</td>
+        <td>${articleExists} ${item.article ? '有' : '无'}</td>
+        <td>${pubExists}</td>
+        <td>
+          ${item.audio ? `<button class="btn btn-sm" onclick="previewAudio('${encodeURIComponent(item.audio)}')">🎵播放</button>` : ''}
+          ${item.article_path ? `<button class="btn btn-sm" onclick="previewArticle('${encodeURIComponent(item.article_path)}')">📖预览</button>` : ''}
+        </td>
+      </tr>`;
+    }).join('');
+    document.getElementById('localBody').innerHTML = localHtml;
+  }
+
+  // --- Published articles tab ---
+  const articlesHtml = (data.articles_json.items || []).slice().reverse().map(a => {
+    const hasAudio = a.audioUrl ? '<span class="status-dot status-ok"></span>有' : '<span class="status-dot status-missing"></span>无';
+    const hasArticle = a.articleUrl ? '<span class="status-dot status-ok"></span>有' : '<span class="status-dot status-missing"></span>无';
+    return `<tr>
+      <td>${a.id || '-'}</td>
+      <td>${escapeHtml(a.title || '-')}</td>
+      <td>${a.category || '-'}</td>
+      <td>${a.publishedAt || '-'}</td>
+      <td>${hasAudio}</td>
+      <td>${hasArticle}</td>
+      <td><button class="btn btn-sm" onclick="viewArticle('${a.id}')">👁️ 查看</button></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('articlesBody').innerHTML = articlesHtml;
+
+  // --- Playlist tab ---
+  const playlistHtml = (data.playlist.items || []).slice().reverse().map(a => {
+    return `<tr>
+      <td>${a.id || '-'}</td>
+      <td>${escapeHtml(a.title || '-')}</td>
+      <td>${a.duration || 0}s</td>
+      <td>${a.publishedAt || '-'}</td>
+      <td>${a.enabled ? '<span class="status-dot status-ok"></span>启用' : '<span class="status-dot status-missing"></span>禁用'}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('playlistBody').innerHTML = playlistHtml;
+}
+
+async function runPipeline(step) {
+  showOutput('⏳ 正在执行: ' + step + ' ...');
+  const result = await api('/api/pipeline/run?step=' + step, {method: 'POST'});
+  if (result) {
+    let out = result.stdout || '';
+    if (result.stderr) out += '\n\n错误:\n' + result.stderr;
+    showOutput(out);
+  }
+  setTimeout(refreshStatus, 1500);
+}
+
+async function generateArticle() {
+  showOutput('⏳ 正在批量生成文章...');
+  const result = await api('/api/pipeline/generate-article', {method: 'POST'});
+  if (result) {
+    let out = result.stdout || '';
+    if (result.stderr) out += '\n\n错误:\n' + result.stderr;
+    showOutput(out);
+  }
+  setTimeout(refreshStatus, 1500);
+}
+
+async function publishLatest() {
+  showOutput('⏳ 正在发布最新文章...');
+  const result = await api('/api/pipeline/publish', {method: 'POST'});
+  if (result) {
+    let out = result.stdout || '';
+    if (result.stderr) out += '\n\n错误:\n' + result.stderr;
+    showOutput(out);
+  }
+  setTimeout(refreshStatus, 1500);
+}
+
+function previewAudio(audioPath) {
+  const path = decodeURIComponent(audioPath);
+  const modalHtml = `<div class="modal-overlay show" id="audioModal" onclick="if(event.target===this)document.getElementById('audioModal').remove()">
+    <div class="modal" style="max-width:500px">
+      <span class="modal-close" onclick="document.getElementById('audioModal').remove()">✕</span>
+      <h3>🎵 音频播放</h3>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:12px">${escapeHtml(path.split('/').pop())}</p>
+      <div class="audio-player">
+        <audio controls autoplay style="width:100%">
+          <source src="/api/audio-file?path=${encodeURIComponent(path)}" type="audio/mpeg">
+        </audio>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  document.getElementById('audioModal').onclick = function(e) { if(e.target === this) this.remove(); };
+}
+
+async function previewArticle(articlePath) {
+  const path = decodeURIComponent(articlePath);
+  showOutput('⏳ 加载文章...');
+  const data = await api('/api/article-content?path=' + encodeURIComponent(path));
+  if (!data) return;
+  const a = data.article;
+  const modalHtml = `<div class="modal-overlay show" id="articleModal" onclick="if(event.target===this)document.getElementById('articleModal').remove()">
+    <div class="modal">
+      <span class="modal-close" onclick="document.getElementById('articleModal').remove()">✕</span>
+      <h3>${escapeHtml(a.title || '无标题')}</h3>
+      <div class="meta">
+        <span>📂 ${escapeHtml(a.category || '其他')}</span>
+        ${a.audio_path ? '<span>🎵 有音频</span>' : ''}
+      </div>
+      ${a.summary ? '<p style="color:var(--muted);font-size:14px;margin-bottom:16px;border-left:3px solid var(--accent);padding-left:12px">' + escapeHtml(a.summary) + '</p>' : ''}
+      ${a.audio_path ? `<div class="audio-player"><audio controls style="width:100%"><source src="/api/audio-file?path=${encodeURIComponent(a.audio_path)}" type="audio/mpeg"></audio></div>` : ''}
+      <div class="article-body">${renderMarkdown(a.content || '')}</div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  document.getElementById('articleModal').onclick = function(e) { if(e.target === this) this.remove(); };
+}
+
+async function viewArticle(id) {
+  const data = await api('/api/articles/' + id);
+  if (!data) return;
+  const modalHtml = `<div class="modal-overlay show" id="articleModal" onclick="if(event.target===this)document.getElementById('articleModal').remove()">
+    <div class="modal">
+      <span class="modal-close" onclick="document.getElementById('articleModal').remove()">✕</span>
+      <h3>${escapeHtml(data.title || '无标题')}</h3>
+      <div class="meta">
+        <span>📂 ${escapeHtml(data.category || '-')}</span>
+        <span>📅 ${data.publishedAt || '-'}</span>
+        <span>🆔 ${data.id}</span>
+      </div>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:16px;border-left:3px solid var(--accent);padding-left:12px">${escapeHtml(data.summary || '')}</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${data.audioUrl ? `<div class="audio-player"><audio controls style="width:100%"><source src="${data.audioUrl}" type="audio/mpeg"></audio></div>` : ''}
+        ${data.articleUrl ? `<a class="btn btn-primary" href="${data.articleUrl}" target="_blank">📖 查看文章</a>` : ''}
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  document.getElementById('articleModal').onclick = function(e) { if(e.target === this) this.remove(); };
+}
+
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tabLocal').style.display = tab === 'local' ? '' : 'none';
+  document.getElementById('tabArticles').style.display = tab === 'articles' ? '' : 'none';
+  document.getElementById('tabPlaylist').style.display = tab === 'playlist' ? '' : 'none';
+}
+
+// Initial load
+refreshStatus();
+</script>
+</body>
+</html>"""
+    uvicorn.run(app, host="127.0.0.1", port=8765, log_level="info")
+
+
+if __name__ == "__main__":
+    main()

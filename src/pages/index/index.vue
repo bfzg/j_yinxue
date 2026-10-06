@@ -65,6 +65,12 @@ function openArticle(article: Article) {
     url: `/pages/article/article?id=${article.id}`,
   })
 }
+
+function openColumns() {
+  uni.navigateTo({
+    url: '/pages/columns/columns',
+  })
+}
 </script>
 
 <template>
@@ -79,6 +85,10 @@ function openArticle(article: Article) {
           @focus="isSearchFocused = true"
           @blur="isSearchFocused = false"
         />
+        <view class="column-entry" @tap="openColumns">
+          <view class="column-entry-icon i-lucide-library" />
+          <text class="column-entry-text">栏目</text>
+        </view>
       </view>
 
       <HomeCategoryTabs v-model:active-category="activeCategory" :categories="categories" />
@@ -134,6 +144,35 @@ function openArticle(article: Article) {
 
 .search-row {
   display: flex;
+  align-items: center;
+}
+
+.column-entry {
+  display: flex;
+  height: 72rpx;
+  margin-left: auto;
+  align-items: center;
+  gap: 8rpx;
+  padding: 0 22rpx;
+  border: 1rpx solid #dfe6e1;
+  border-radius: 999rpx;
+  background: #ffffff;
+  box-shadow: 0 12rpx 30rpx rgba(43, 67, 57, 0.05);
+  color: #1f5146;
+}
+
+.column-entry:active {
+  background: #eef4ef;
+}
+
+.column-entry-icon {
+  width: 30rpx;
+  height: 30rpx;
+}
+
+.column-entry-text {
+  font-size: 24rpx;
+  font-weight: 700;
 }
 
 .list-area {

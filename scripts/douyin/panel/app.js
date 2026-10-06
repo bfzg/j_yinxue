@@ -1,0 +1,599 @@
+/* 抖音采集流水线面板前端逻辑（无构建，原生 JS） */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const el = (tag, cls, html) => {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (html != null) n.innerHTML = html;
+  return n;
+};
+const esc = (s) => String(s == null ? '' : s)
+  .replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+const S = {
+  accounts: [], columns: [], jobs: [], videos: [], total: 0,
+  selected: new Set(), offset: 0, limit: 120, steps: ['audio', 'transcript', 'article'],
+  busy: null, cookieState: null, detail: null, view: 'queue',
+};
+
+/* ---------- 网络 ---------- */
+async function api(path, opts = {}) {
+  const res = await fetch(path, {
+    headers: { 'Content-Type': 'application/json' },
+    ...opts,
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  const text = await res.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch { data = { detail: text }; }
+  if (!res.ok) {
+    const msg = (data && (data.detail || data.message)) || `HTTP ${res.status}`;
+    throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+  }
+  return data;
+}
+
+function fmtDur(ms) {
+  const t = Math.max(0, Math.round(ms / 1000));
+  const m = Math.floor(t / 60), sec = t % 60;
+  return m > 59
+    ? `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
+    : `${m}:${String(sec).padStart(2, '0')}`;
+}
+
+function toast(msg, kind = '') {
+  const t = el('div', `toast ${kind}`, esc(msg));
+  $('#toasts').appendChild(t);
+  setTimeout(() => t.remove(), kind === 'err' ? 9000 : 4200);
+}
+
+async function guard(fn) {
+  try { await fn(); } catch (e) { toast(e.message || String(e), 'err'); }
+}
+
+/* ---------- 顶栏 / 概览 ---------- */
+const STAGE_CN = {
+  scanned: '已入库', audio: '已下载', transcript: '已转写', article: '已成文',
+  published: '已发布', failed: '失败', skipped: '跳过',
+};
+
+function renderChips(st) {
+  const c = [
+    ['账号', st.accounts], ['作品', st.videos], ['栏目', st.columns],
+    ['时长', `${st.total_hours}h`], ['ASR', `${Math.round((st.asr_seconds || 0) / 60)}min`],
+  ];
+  $('#chips').innerHTML = c.map(([k, v]) => `${k} <b>${v}</b>`)
+    .map((x, i) => `<span class="chip">${x}</span>`).join('');
+  const s = st.stages || {};
+  const extra = Object.entries(s).map(([k, v]) =>
+    `<span class="chip">${STAGE_CN[k] || k} <b>${v.n}</b></span>`).join('');
+  $('#chips').insertAdjacentHTML('beforeend', extra);
+  const done = ['article', 'published', 'skipped'].reduce((a, k) => a + ((s[k] || {}).n || 0), 0);
+  $('#pendingN').textContent = Math.max(0, (st.videos || 0) - done);
+}
+
+function renderState(ov) {
+  const run = ov.process || {};
+  const busyJob = (ov.jobs || []).find((j) => j.status === 'running');
+  const box = $('#runstate');
+  box.className = 'runstate';
+  let txt = '空闲';
+  if (run.running) {
+    box.classList.add('busy');
+    txt = `处理 ${run.done}/${run.total} · ${STAGE_CN[run.step] || run.step || ''} ${run.current ? run.current.slice(-6) : ''}`;
+  } else if (busyJob) {
+    box.classList.add('busy');
+    txt = `${busyJob.kind} 进行中 ${busyJob.elapsed}s`;
+  }
+  const err = (ov.jobs || []).find((j) => j.status === 'error' && Date.now() - (j.ts || 0) < 60000);
+  if (!run.running && !busyJob && ov.lastError) { box.classList.add('err'); txt = '有任务失败'; }
+  $('#runtext').textContent = txt;
+  $('#btnStop').disabled = !(run.running || busyJob);
+  const jobs = ov.jobs || [];
+  const lastErr = jobs.find((j) => j.status === 'error');
+  S.lastError = lastErr && lastErr.error ? lastErr.error : '';
+  if (run.running && run.note) $('#procInfo').textContent = run.note;
+  else if (busyJob) $('#procInfo').textContent = busyJob.note || busyJob.kind;
+  else $('#procInfo').textContent = ov.process && ov.process.note ? ov.process.note : '';
+}
+
+/* ---------- 登录态 ---------- */
+function renderCookie(ov) {
+  const ck = ov.cookie || {};
+  const lg = ov.browser || {};
+  const box = $('#cookieLight');
+  let cls = 'err', t1 = '没有 Cookie', t2 = '粘贴 Cookie 或点扫码登录';
+  if (ck.has_sessionid) {
+    cls = 'warn';
+    t1 = '已有 sessionid，但未验证能否翻页';
+    t2 = `文件 ${ck.length} 字符 · ${ck.file}`;
+  }
+  if (S.cookieState && S.cookieState.checked) {
+    const r = S.cookieState;
+    cls = r.ok ? 'ok' : (r.logged_in ? 'warn' : 'err');
+    t1 = r.ok ? '登录态可用，能正常翻页' : (r.logged_in ? '登录态异常' : '未登录');
+    t2 = r.message || '';
+    if (r.nickname) t1 = `${r.nickname} · ${t1}`;
+    if (r.aweme_count) t2 += `（主页 ${r.aweme_count} 条）`;
+  }
+  box.className = `light ${cls}`;
+  box.innerHTML = `<i class="lamp"></i><div class="txt"><div class="t1">${esc(t1)}</div><div class="t2">${esc(t2)}</div></div>`;
+  $('#engineTag').textContent = `引擎 ${ov.engine || ''}`;
+  const cos = $('#cosLight');
+  if (ov.cos) cos.className = 'light ok', cos.innerHTML = '<i class="lamp"></i><div class="txt"><div class="t1">COS 密钥已配置</div><div class="t2">可以发布</div></div>';
+  else cos.className = 'light warn', cos.innerHTML = '<i class="lamp"></i><div class="txt"><div class="t1">未配置 COS 密钥</div><div class="t2">export COS_SECRET_ID=xxx; export COS_SECRET_KEY=xxx 后再发布；采集与成文不受影响</div></div>';
+}
+
+/* ---------- 账号 ---------- */
+function renderAccounts() {
+  const list = $('#acctList');
+  list.innerHTML = '';
+  S.accounts.forEach((a) => {
+    const row = el('div', `acct${a.enabled ? '' : ' off'}`);
+    const pct = a.aweme_count ? Math.min(100, Math.round((a.item_count / a.aweme_count) * 100)) : 0;
+    row.innerHTML = `
+      <div class="top">
+        <span class="nm">${esc(a.name || a.slug)}</span>
+        <span class="slug">${esc(a.slug || '')}</span>
+        <span class="acts">
+          <button class="btn sm" data-act="scan" title="只采集这个账号">采集</button>
+          <button class="btn sm" data-act="edit" title="编辑">改</button>
+          <button class="btn sm" data-act="del" title="删除">删</button>
+        </span>
+      </div>
+      <div class="meta">入库 ${a.item_count}${a.aweme_count ? ` / 主页 ${a.aweme_count}（${pct}%）` : ''} · 已处理 ${a.processed_count} · 栏目 ${a.column_count} · 上限 ${a.max_items || '不限'}</div>
+      <div class="note">${esc(a.scan_note || '未扫描')} ${a.last_scan_at ? `· ${esc(a.last_scan_at)}` : ''}</div>`;
+    const edit = el('div', 'edit');
+    edit.innerHTML = `
+      <div class="grid2">
+        <div class="field"><label>名称</label><input type="text" data-f="name" value="${esc(a.name || '')}"></div>
+        <div class="field"><label>抓取上限（0=全部）</label><input type="number" data-f="max_items" value="${a.max_items || 0}" min="0"></div>
+      </div>
+      <div class="field"><label>定位 / 风格</label><input type="text" data-f="style" value="${esc(a.style || '')}"></div>
+      <div class="row"><label class="check"><input type="checkbox" data-f="enabled" ${a.enabled ? 'checked' : ''}>启用</label>
+      <span class="spacer" style="flex:1"></span>
+      <button class="btn sm" data-act="save">保存</button></div>`;
+    row.appendChild(edit);
+    row.addEventListener('click', (ev) => {
+      const act = ev.target.dataset && ev.target.dataset.act;
+      if (!act) return;
+      ev.stopPropagation();
+      if (act === 'edit') edit.classList.toggle('on');
+      if (act === 'scan') startScan([a.sec_user_id], a.name);
+      if (act === 'del') guard(async () => {
+        if (!confirm(`删除账号「${a.name}」？数据库里已入库的作品不会删除。`)) return;
+        await api(`/api/accounts/${a.sec_user_id}`, { method: 'DELETE' });
+        toast('已删除', 'ok'); refresh();
+      });
+      if (act === 'save') guard(async () => {
+        const body = { enabled: edit.querySelector('[data-f=enabled]').checked };
+        ['name', 'style'].forEach((k) => { body[k] = edit.querySelector(`[data-f=${k}]`).value.trim(); });
+        body.max_items = Number(edit.querySelector('[data-f=max_items]').value) || 0;
+        await api(`/api/accounts/${a.sec_user_id}`, { method: 'PUT', body });
+        edit.classList.remove('on'); toast('已保存', 'ok'); refresh();
+      });
+    });
+    list.appendChild(row);
+  });
+  $('#acctN').textContent = `${S.accounts.length} 个`;
+  fillSelects();
+}
+
+function fillSelects() {
+  const opts = ['fAcct', 'cbAcct', 'pubAcct'];
+  opts.forEach((id) => {
+    const sel = $(`#${id}`);
+    if (!sel) return;
+    const keep = sel.value;
+    const first = id === 'fAcct' ? '<option value="">全部账号</option>' : '<option value="">选择账号…</option>';
+    sel.innerHTML = first + S.accounts.map((a) =>
+      `<option value="${a.sec_user_id}">${esc(a.name || a.slug)}</option>`).join('');
+    sel.value = keep;
+  });
+  const colOpts = ['fCol', 'pubCol'];
+  colOpts.forEach((id) => {
+    const sel = $(`#${id}`);
+    if (!sel) return;
+    const keep = sel.value;
+    const first = id === 'fCol'
+      ? '<option value="">全部栏目</option><option value="__none__">未归类</option>'
+      : '<option value="">全部栏目</option>';
+    sel.innerHTML = first + S.columns.map((c) =>
+      `<option value="${c.column_id}">${esc(c.name)}（${c.n_videos}）</option>`).join('');
+    sel.value = keep;
+  });
+}
+
+/* ---------- 队列 ---------- */
+function renderQueue() {
+  const tb = $('#qBody');
+  tb.innerHTML = '';
+  const colById = Object.fromEntries(S.columns.map((c) => [c.column_id, c]));
+  S.videos.forEach((v) => {
+    const tr = el('tr');
+    if (S.selected.has(v.aweme_id)) tr.className = 'sel';
+    const dur = v.duration_ms ? fmtDur(v.duration_ms) : '—';
+    const col = v.column_id ? (colById[v.column_id] || {}).name || v.column_name : '';
+    tr.innerHTML = `
+      <td><input type="checkbox" style="width:13px;height:13px;accent-color:var(--accent)" ${S.selected.has(v.aweme_id) ? 'checked' : ''}></td>
+      <td class="t" title="${esc(v.title)}">${esc(v.title)}${v.kind === 'image_text' ? ' <span class="tag">图文</span>' : ''}</td>
+      <td class="t" title="${esc(v.account_name || '')}">${esc(v.account_name || '')}</td>
+      <td class="t">${col ? `<span class="tag mix">${esc(col)}</span>` : (v.mix_name ? `<span class="tag">${esc(v.mix_name)}</span>` : '<span style="color:var(--ink3)">—</span>')}</td>
+      <td class="num">${v.episode_no || v.ep_no || ''}</td>
+      <td class="num">${dur}</td>
+      <td><span class="st ${esc(v.stage)}"><i></i>${STAGE_CN[v.stage] || v.stage}${v.error ? ' ⚠' : ''}</span></td>
+      <td><div class="row" style="gap:4px;flex-wrap:nowrap">
+        <button class="btn sm" data-act="open">看</button>
+        <button class="btn sm" data-act="one">跑</button>
+      </div></td>`;
+    const ck = tr.querySelector('input');
+    ck.addEventListener('change', () => {
+      if (ck.checked) S.selected.add(v.aweme_id); else S.selected.delete(v.aweme_id);
+      tr.classList.toggle('sel', ck.checked); updateSelInfo();
+    });
+    tr.addEventListener('click', (ev) => {
+      if (ev.target.tagName === 'INPUT') return;
+      const act = ev.target.dataset && ev.target.dataset.act;
+      if (act === 'open') openDetail(v.aweme_id);
+      else if (act === 'one') startProcess([v.aweme_id], v.title);
+      else if (!act) openDetail(v.aweme_id);
+    });
+    tb.appendChild(tr);
+  });
+  $('#qEmpty').style.display = S.videos.length ? 'none' : '';
+  $('#qN').textContent = S.total;
+  $('#pageInfo').textContent = S.total ? `${S.offset + 1}-${Math.min(S.offset + S.limit, S.total)} / ${S.total}` : '0';
+  $('#btnPrev').disabled = S.offset <= 0;
+  $('#btnNext').disabled = S.offset + S.limit >= S.total;
+  updateSelInfo();
+}
+
+function updateSelInfo() {
+  $('#selInfo').textContent = S.selected.size ? `已选 ${S.selected.size} 条` : '';
+  const boxes = $$('#qBody input[type=checkbox]');
+  $('#ckAll').checked = boxes.length > 0 && boxes.every((b) => b.checked);
+}
+
+async function loadQueue() {
+  const p = new URLSearchParams({
+    sec_user_id: $('#fAcct').value || '', column_id: $('#fCol').value || '',
+    stage: $('#fStage').value || '', q: $('#fQ').value.trim() || '',
+    order: $('#fOrder').value || 'create_time', limit: S.limit, offset: S.offset,
+  });
+  const res = await api(`/api/videos?${p}`);
+  S.videos = res.items; S.total = res.total; renderQueue();
+}
+
+/* ---------- 任务 ---------- */
+function renderJobs() {
+  const box = $('#jobList');
+  if (!S.jobs.length) { box.innerHTML = '<div class="empty" style="padding:18px">暂无任务</div>'; return; }
+  box.innerHTML = '';
+  S.jobs.slice(0, 8).forEach((j) => {
+    const line = el('div', `job ${j.status}`);
+    const msg = j.status === 'error' ? j.error : (j.note || (j.result ? JSON.stringify(j.result).slice(0, 160) : ''));
+    line.innerHTML = `<span class="k">${esc(j.kind)}</span><span class="m">${esc(msg || j.status)}</span><span class="t">${j.elapsed}s</span>`;
+    box.appendChild(line);
+  });
+}
+
+function startScan(secs, label) {
+  guard(async () => {
+    const r = await api('/api/scan', { method: 'POST', body: { sec_user_ids: secs } });
+    toast(`已开始采集 ${label || r.accounts.length + ' 个账号'}；Chrome 会自己滚动，别关掉窗口`, 'ok');
+    refresh();
+  });
+}
+
+function startProcess(ids, label) {
+  guard(async () => {
+    const r = await api('/api/process', {
+      method: 'POST',
+      body: { ids, steps: S.steps, force: false },
+    });
+    toast(`开始处理 ${r.queued} 条：${S.steps.map((s) => ({ audio: '音频', transcript: '转写', article: '文章' }[s])).join(' → ')}`, 'ok');
+    refresh();
+  });
+}
+
+/* ---------- 详情抽屉 ---------- */
+function mdToHtml(src) {
+  const out = [];
+  let list = null;
+  const inline = (t) => esc(t)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`(.+?)`/g, '<code>$1</code>');
+  String(src || '').split(/\r?\n/).forEach((raw) => {
+    const line = raw.trim();
+    if (!line) { if (list) { out.push('</ul>'); list = null; } return; }
+    if (/^#{1,6}\s/.test(line)) {
+      if (list) { out.push('</ul>'); list = null; }
+      const lvl = line.match(/^#+/)[0].length;
+      const tag = lvl <= 2 ? 'h2' : 'h3';
+      out.push(`<${tag}>${inline(line.replace(/^#+\s*/, ''))}</${tag}>`);
+    } else if (/^([-*•]|\d+[.、])\s+/.test(line)) {
+      if (!list) { out.push('<ul>'); list = 1; }
+      out.push(`<li>${inline(line.replace(/^([-*•]|\d+[.、])\s+/, ''))}</li>`);
+    } else if (/^>\s?/.test(line)) {
+      if (list) { out.push('</ul>'); list = null; }
+      out.push(`<blockquote>${inline(line.replace(/^>\s?/, ''))}</blockquote>`);
+    } else if (/^(---+|\*\*\*+)\s*$/.test(line)) {
+      if (list) { out.push('</ul>'); list = null; }
+      out.push('<hr>');
+    } else {
+      if (list) { out.push('</ul>'); list = null; }
+      out.push(`<p>${inline(line)}</p>`);
+    }
+  });
+  if (list) out.push('</ul>');
+  return out.join('\n');
+}
+
+async function openDetail(id) {
+  guard(async () => {
+    const v = await api(`/api/videos/${id}`);
+    S.detail = v;
+    $('#drawer').classList.add('on');
+    $('#dTitle').textContent = v.title || id;
+    $('#dStage').innerHTML = `<span class="st ${esc(v.stage)}"><i></i>${STAGE_CN[v.stage] || v.stage}</span>`;
+    $('#dSrc').href = v.source_url || `https://www.douyin.com/video/${id}`;
+    $('#dPlay').disabled = !v.audio_path;
+    $('#dPub').disabled = !v.article_path;
+    const head = `
+      <h1>${esc(v.title)}</h1>
+      <div class="sub">${esc(v.account_name || '')}${v.column_name ? ` · 栏目「${esc(v.column_name)}」` : ''}
+        ${v.episode_no ? ` · 第 ${v.episode_no} 集` : ''}${v.create_time ? ` · ${new Date(v.create_time * 1000).toLocaleDateString('zh-CN')}` : ''}</div>`;
+    if (v.article_md) {
+      $('#dBody').innerHTML = head + `<div class="md">${mdToHtml(v.article_md)}</div>
+        <div class="kv">aweme_id ${esc(v.aweme_id)} · 转写 ${(v.transcript_txt || '').length} 字 · 文章 ${(v.article_md || '').length} 字</div>`;
+    } else if (v.transcript_txt) {
+      $('#dBody').innerHTML = head + `<div class="md"><p style="color:var(--ink3)">还没有生成文章，下面是转写原文：</p>${mdToHtml(v.transcript_txt)}</div>`;
+    } else {
+      $('#dBody').innerHTML = head + `<div class="md"><p style="color:var(--ink3)">这条作品还什么都没跑。描述：<br>${esc((v.desc_raw || '').slice(0, 400))}</p></div>`;
+    }
+    $('#dBody').scrollTop = 0;
+    $('.drawer .scroll').scrollTop = 0;
+    const au = $('#audio');
+    au.pause();
+    $('#dPlayer').style.display = 'none';
+    au.src = v.audio_path ? `/media/audio?aweme_id=${v.aweme_id}` : '';
+  });
+}
+
+/* ---------- 栏目视图 ---------- */
+function renderColumns() {
+  const box = $('#colList');
+  $('#cN').textContent = S.columns.length;
+  if (!S.columns.length) {
+    box.innerHTML = '<div class="empty" style="grid-column:1/-1">还没有栏目。先在「作品队列」采集，再点上面的「AI 自动分栏目」。</div>';
+    return;
+  }
+  const accById = Object.fromEntries(S.accounts.map((a) => [a.sec_user_id, a]));
+  box.innerHTML = '';
+  S.columns.forEach((c) => {
+    const pct = c.n_videos ? Math.round((c.n_articles / c.n_videos) * 100) : 0;
+    const card = el('div', 'col');
+    card.innerHTML = `
+      <div class="nm">${esc(c.name)} ${c.locked ? '<span class="lock">已锁定</span>' : ''}</div>
+      <div class="slug">${esc(c.slug || '')} · ${esc((accById[c.sec_user_id] || {}).name || '')} · ${esc(c.source || '')}</div>
+      <div class="meta">${c.n_videos} 集 · 已成文 ${c.n_articles} · ${c.total_ms ? Math.round(c.total_ms / 360000) / 10 : 0} 小时</div>
+      ${c.description ? `<div class="meta" style="color:var(--ink3)">${esc(c.description)}</div>` : ''}
+      <div class="bar"><i style="width:${pct}%"></i></div>
+      <div class="acts">
+        <button class="btn sm" data-act="run">处理全栏目</button>
+        <button class="btn sm" data-act="pub">发布全栏目</button>
+        <button class="btn sm" data-act="queue">看作品</button>
+        <button class="btn sm" data-act="edit">改</button>
+        <button class="btn sm" data-act="lock">${c.locked ? '解锁' : '锁定'}</button>
+      </div>`;
+    card.addEventListener('click', (ev) => {
+      const act = ev.target.dataset && ev.target.dataset.act;
+      if (!act) return;
+      if (act === 'run') guard(async () => {
+        await api('/api/process', { method: 'POST', body: { column_id: c.column_id, steps: S.steps } });
+        toast(`已排入处理队列：${c.name}`, 'ok'); refresh();
+      });
+      if (act === 'pub') guard(async () => {
+        await api('/api/publish', { method: 'POST', body: { column_id: c.column_id } });
+        toast(`开始发布：${c.name}`, 'ok'); refresh();
+      });
+      if (act === 'queue') { $('#fCol').value = c.column_id; S.offset = 0; showView('queue'); loadQueue(); }
+      if (act === 'lock') guard(async () => {
+        await api(`/api/columns/${c.column_id}`, { method: 'PATCH', body: { locked: c.locked ? 0 : 1 } });
+        refresh();
+      });
+      if (act === 'edit') {
+        const name = prompt('栏目名', c.name);
+        if (name === null) return;
+        const desc = prompt('栏目简介', c.description || '');
+        guard(async () => {
+          await api(`/api/columns/${c.column_id}`, { method: 'PATCH', body: { name, description: desc || '', locked: 1 } });
+          toast('已保存并锁定（锁定后 AI 不再改动）', 'ok'); refresh();
+        });
+      }
+    });
+    box.appendChild(card);
+  });
+}
+
+/* ---------- 视图切换 ---------- */
+function showView(v) {
+  S.view = v;
+  $$('.tabs button').forEach((b) => b.classList.toggle('on', b.dataset.view === v));
+  $$('.view').forEach((n) => n.classList.toggle('on', n.id === `view-${v}`));
+  if (v === 'columns') renderColumns();
+  if (v === 'queue') loadQueue().catch((e) => toast(e.message, 'err'));
+  if (v === 'log') loadLog().catch(() => {});
+}
+
+async function loadLog() {
+  const rows = await api('/api/events?limit=120');
+  $('#logBody').innerHTML = rows.map((r) =>
+    `<div>${esc(r.ts)} <span style="color:${r.level === 'error' ? 'var(--err)' : r.level === 'warn' ? 'var(--warn)' : 'var(--ink3)'}">[${esc(r.level)}]</span> ${esc(r.scope)} ${esc(r.message)}</div>`).join('')
+    || '<div>暂无日志</div>';
+}
+
+/* ---------- 轮询 ---------- */
+async function refresh(full = true) {
+  const ov = await api('/api/overview');
+  S.accounts = ov.accounts; S.columns = ov.columns; S.jobs = ov.jobs; S.overview = ov;
+  renderChips(ov.stats); renderState(ov); renderCookie(ov); renderAccounts(); renderJobs();
+  if (full && S.view === 'queue') loadQueue();
+  if (full && S.view === 'columns') renderColumns();
+  const running = (ov.jobs || []).some((j) => j.status === 'running') || (ov.process || {}).running;
+  clearTimeout(refresh._t);
+  refresh._t = setTimeout(() => refresh(false).catch(() => {}), running ? 2500 : 9000);
+}
+
+/* ---------- 事件绑定 ---------- */
+$('#btnReload').onclick = () => refresh();
+$('#btnStop').onclick = () => guard(async () => {
+  await api('/api/stop', { method: 'POST' });
+  toast('已发出停止请求：当前这一条做完就收工', 'ok');
+});
+$('#btnScanAll').onclick = () => startScan([], '全部启用账号');
+$('#btnCheck').onclick = () => guard(async () => {
+  $('#btnCheck').disabled = true;
+  try {
+    const r = await api('/api/check', { method: 'POST', body: { sec_user_id: $('#fAcct').value || '' } });
+    S.cookieState = { checked: true, ...r };
+    renderCookie(S.overview);
+    toast(r.message || (r.ok ? '登录态正常' : '登录态异常'), r.ok ? 'ok' : 'err');
+  } finally { $('#btnCheck').disabled = false; }
+});
+$('#btnLogin').onclick = () => guard(async () => {
+  const r = await api('/api/login', { method: 'POST', body: { sec_user_id: $('#fAcct').value || '' } });
+  toast(r.message, 'ok'); refresh();
+});
+$('#btnBrowserReset').onclick = () => guard(async () => {
+  $('#btnBrowserReset').disabled = true;
+  try {
+    const r = await api('/api/browser/reset', { method: 'POST', body: {} });
+    toast(r.message, 'ok'); S.cookieState = null; refresh();
+  } finally { $('#btnBrowserReset').disabled = false; }
+});
+$('#btnCookieSave').onclick = () => guard(async () => {
+  const raw = $('#cookieText').value.trim();
+  if (!raw) throw new Error('请先粘贴 Cookie');
+  const r = await api('/api/cookie', { method: 'POST', body: { cookie: raw, inject: $('#cookieInject').checked } });
+  toast(r.message || 'Cookie 已保存', 'ok');
+  $('#cookieText').value = '';
+  S.cookieState = null; refresh();
+});
+$('#btnFilter').onclick = () => { S.offset = 0; loadQueue(); };
+['fAcct', 'fCol', 'fStage', 'fOrder'].forEach((id) => {
+  $(`#${id}`).onchange = () => { S.offset = 0; loadQueue().catch((e) => toast(e.message, 'err')); };
+});
+$('#fQ').onkeydown = (e) => { if (e.key === 'Enter') { S.offset = 0; loadQueue(); } };
+$('#btnPrev').onclick = () => { S.offset = Math.max(0, S.offset - S.limit); loadQueue(); };
+$('#btnNext').onclick = () => { S.offset += S.limit; loadQueue(); };
+$('#btnSelClear').onclick = () => { S.selected.clear(); renderQueue(); };
+$('#btnSelPending').onclick = () => {
+  S.videos.filter((v) => !['article', 'published', 'skipped'].includes(v.stage))
+    .forEach((v) => S.selected.add(v.aweme_id));
+  renderQueue();
+};
+$('#ckAll').onchange = (e) => {
+  S.videos.forEach((v) => { if (e.target.checked) S.selected.add(v.aweme_id); else S.selected.delete(v.aweme_id); });
+  renderQueue();
+};
+$('#btnProcessAll').onclick = () => {
+  const n = Number($('#pendingN').textContent) || 0;
+  if (!n) return toast('没有待处理的作品', 'ok');
+  if (!confirm(`将处理全部 ${n} 个未成文作品（${S.steps.join(' → ')}），预计耗时较长，可随时点“停止”`)) return;
+  guard(async () => {
+    const r = await api('/api/process', { method: 'POST', body: { all: true, steps: S.steps } });
+    toast(`已排入队列：${r.queued || n} 条`, 'ok'); refresh();
+  });
+};
+$('#btnSteps').onclick = () => {
+  const STEPS = [['audio', '下载音频'], ['transcript', '语音转写'], ['article', '生成文章']];
+  const cur = new Set(S.steps);
+  const txt = prompt('勾选要跑的步骤（逗号分隔：audio / transcript / article）', [...cur].join(','));
+  if (txt === null) return;
+  const picked = txt.split(/[,，\s]+/).filter((x) => STEPS.some((s) => s[0] === x));
+  if (!picked.length) return toast('没选任何步骤', 'err');
+  S.steps = picked;
+  $('#btnSteps').textContent = picked.map((p) => ({ audio: '音频', transcript: '转写', article: '文章' }[p])).join('+');
+};
+$('#btnProcess').onclick = () => {
+  if (S.selected.size) return startProcess([...S.selected]);
+  guard(async () => {
+    const r = await api('/api/process', {
+      method: 'POST',
+      body: { sec_user_id: $('#fAcct').value || '', stage: 'pending', steps: S.steps, limit: Number(prompt('本次处理多少条？（0=按筛选全部）', '20') || 0) },
+    });
+    toast(`已按筛选排入队列：${r.queued || '全部'} 条`, 'ok'); refresh();
+  });
+};
+$('#dClose').onclick = () => { $('#drawer').classList.remove('on'); $('#audio').pause(); };
+$('#dPlay').onclick = () => {
+  const au = $('#audio');
+  if (!au.getAttribute('src')) return toast('这条还没有音频文件', 'err');
+  $('#dPlayer').style.display = '';
+  au.play();
+};
+$('#dPub').onclick = () => guard(async () => {
+  await api('/api/publish', { method: 'POST', body: { ids: [S.detail.aweme_id] } });
+  toast('已提交发布任务', 'ok'); refresh();
+});
+$('#btnBuild').onclick = () => guard(async () => {
+  const sec = $('#cbAcct').value;
+  await api('/api/columns/build', { method: 'POST', body: { sec_user_id: sec, all: !sec, use_ai: $('#cbAI').checked } });
+  toast(sec ? '开始为所选账号分栏目' : '开始为全部账号分栏目（会调用模型，进度看左下任务）', 'ok');
+  refresh();
+});
+$('#btnColNew').onclick = () => guard(async () => {
+  const sec = $('#cbAcct').value || (S.accounts[0] || {}).sec_user_id;
+  if (!sec) throw new Error('请先添加账号');
+  const name = prompt('新栏目名（例如：大风歌）');
+  if (!name) return;
+  await api('/api/columns', { method: 'POST', body: { sec_user_id: sec, name } });
+  toast('已创建（锁定状态，AI 不会覆盖）', 'ok'); refresh();
+});
+$('#btnPublish').onclick = () => guard(async () => {
+  await api('/api/publish', { method: 'POST', body: { sec_user_id: $('#pubAcct').value, column_id: $('#pubCol').value } });
+  toast('已提交发布任务', 'ok'); refresh();
+});
+$('#btnExport').onclick = () => guard(async () => {
+  const r = await api('/api/export', { method: 'POST', body: {} });
+  toast(`已导出：articles ${r.articles} / playlist ${r.playlist} / columns ${r.columns}`, 'ok');
+});
+$('#btnExportDraft').onclick = () => guard(async () => {
+  const r = await api('/api/export', { method: 'POST', body: { draft: true } });
+  toast(`已导出预览数据（含未发布）：${r.articles} 条`, 'ok');
+});
+$('#btnLogReload').onclick = () => loadLog().catch(() => {});
+$$('.tabs button').forEach((b) => { b.onclick = () => showView(b.dataset.view); });
+$('#btnAddOpen').onclick = () => $('#mAdd').classList.add('on');
+$$('#mAdd [data-close],#mAdd .ft .btn').forEach((b) => {
+  if (b.id === 'aSave') return;
+  b.onclick = () => $('#mAdd').classList.remove('on');
+});
+$('#mAdd').addEventListener('click', (e) => { if (e.target.id === 'mAdd') $('#mAdd').classList.remove('on'); });
+$('#aSave').onclick = () => guard(async () => {
+  const raw = $('#aRaw').value.trim();
+  if (!raw) throw new Error('请粘贴主页链接');
+  const acc = await api('/api/accounts', {
+    method: 'POST',
+    body: { raw, name: $('#aName').value.trim(), style: $('#aStyle').value.trim(), max_items: Number($('#aMax').value) || 0, probe: $('#aProbe').checked },
+  });
+  $('#mAdd').classList.remove('on');
+  $('#aRaw').value = $('#aName').value = $('#aStyle').value = '';
+  toast(`已添加：${acc.name || acc.sec_user_id}`, 'ok');
+  if (acc.probe) {
+    S.probeResult = acc.probe;
+    toast(acc.probe.ok
+      ? `试探成功：${acc.probe.nickname || ''}，主页 ${acc.probe.aweme_count} 条，${(acc.probe.mixes || []).length} 个可见合集`
+      : `试探失败：${acc.probe.message}`, acc.probe.ok ? 'ok' : 'err');
+  }
+  refresh();
+});
+$('#btnHelp').onclick = () => $('#mAdd').classList.remove('on');
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { $('#drawer').classList.remove('on'); $('#mAdd').classList.remove('on'); }
+  if (e.key === 'r' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); refresh(); }
+});
+
+refresh().catch((e) => toast(`面板后端没连上：${e.message}`, 'err'));

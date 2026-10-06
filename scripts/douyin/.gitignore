@@ -3,3 +3,10 @@ output/
 cookie.txt
 __pycache__/
 *.pyc
+bailian.key
+.pw-chrome/
+.pw-anon/
+db/
+logs/
+.DS_Store
+tests/.pytest_cache/

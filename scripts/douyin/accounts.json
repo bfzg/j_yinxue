@@ -1,0 +1,50 @@
+[
+  {
+    "sec_user_id": "MS4wLjABAAAAJaG9lfAOtOnGXE7yudBjLAY5jX0tL4NjTEjgjj1HcADaJj3sK9ujpVadbB_Xi-uO",
+    "slug": "sanzhen-dushu",
+    "name": "三分钟读一本书",
+    "style": "阅读 / 几分钟拆书",
+    "enabled": true,
+    "max_items": 0
+  },
+  {
+    "sec_user_id": "MS4wLjABAAAAn3p_H8b9fAq4StK1Ka4TENn5SSTEIT_K2khCK3I2ncqXu1NLjwpJvJ8ZP2sSZ80J",
+    "slug": "tiandao-kaiwu",
+    "name": "天道开悟录",
+    "style": "认知 / 哲学 / 中国传统文化",
+    "enabled": true,
+    "max_items": 0
+  },
+  {
+    "sec_user_id": "MS4wLjABAAAA7bhEyXsPq05h36FhPyW1JgIu0yHkMCJ2nPnLOlAUhA0UHMxSx3EGv5tmYAYAFoEL",
+    "slug": "tianya-shentie",
+    "name": "天涯神贴隐学",
+    "style": "天涯神贴 / 深度解析",
+    "enabled": true,
+    "max_items": 200
+  },
+  {
+    "sec_user_id": "MS4wLjABAAAADkRYTbaOUr4bnKFknXGFu3ABuEihEJgmut1C4UMUlCc",
+    "slug": "baijia-caidu",
+    "name": "百家财读",
+    "style": "财富 / 财商 / 理财 / 认知",
+    "enabled": true,
+    "max_items": 0
+  },
+  {
+    "sec_user_id": "MS4wLjABAAAA9mD7hLFDQnqoxt-G8l300vThQBNMstF1v9yFcPw2-DzZzE8Ua0XsuqAjjwQ6haYY",
+    "slug": "mudu-jingjin",
+    "name": "木读精进史",
+    "style": "认知 / 思维 / 深度理解",
+    "enabled": true,
+    "max_items": 0
+  },
+  {
+    "sec_user_id": "MS4wLjABAAAAPk5stxyqzLEt0TQUtJMz4o8ZSgsdL-fz7-bTBEDOfPv2rViRlHmgms8Fsff80-MJ",
+    "slug": "shiyuan-qingtan",
+    "name": "史苑轻谈",
+    "style": "历史 / 百家讲坛 / 史记 / 王立群",
+    "enabled": true,
+    "max_items": 0
+  }
+]

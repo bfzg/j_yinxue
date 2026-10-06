@@ -1,2 +1,19 @@
-f2>=0.0.1.7
-faster-whisper>=1.0.0
+# 抖音采集流水线（scripts/douyin）
+# 安装： .venv/bin/pip install -r requirements.txt
+# 首次使用还要准备一个真实 Chrome： .venv/bin/playwright install chrome  或直接用系统 /Applications/Google Chrome.app
+
+# 采集
+playwright>=1.45.0        # 真实 Chrome 滚动 + 拦截作品接口（SCAN_ENGINE=browser）
+f2>=0.0.1.7               # 视频直链解析 / 下载（备用引擎，SCAN_ENGINE=api）
+
+# 面板
+fastapi>=0.110.0
+uvicorn>=0.27.0
+jinja2>=3.0.0
+
+# 模型服务（阿里云百炼）
+dashscope>=1.20.0         # qwen-plus 文章成文 + paraformer-v2 语音转写
+httpx>=0.25.0
+
+# 发布
+cos-python-sdk-v5>=1.9.40  # 上传 mp3 / 正文到腾讯云 COS

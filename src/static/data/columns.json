@@ -1,0 +1,1226 @@
+{
+  "app": {
+    "name": "九哥隐学",
+    "author": "九哥",
+    "cover": "",
+    "description": "九哥原创文章阅读"
+  },
+  "items": [
+    {
+      "id": "col-b8fff9",
+      "name": "《商传讲永乐大帝》",
+      "accountId": "shiyuan-qingtan",
+      "accountName": "史苑轻谈",
+      "cover": "https://p3-pc-sign.douyinpic.com/tos-cn-i-0813c001/oEJ1EC2qZBAru3APA1i7Ae1ACAjgcCJUIVfFmi~tplv-dy-cropcenter:323:430.jpeg?lk3s=138a59ce&x-expires=2106583200&x-signature=TGp3nDjAcYncCT3Mrf%2F6TSgQ7JU%3D&from=327834062&s=PackSourceEnum_PUBLISH&se=true&sh=323_430&sc=cover&biz_tag=pcweb_cover&l=202610060247070E565BC13D33236C4BF6",
+      "sort": 0,
+      "episodeTotal": 9,
+      "episodes": [
+        {
+          "awemeId": "7685035140515464555",
+          "title": "永乐盛世的缔造者：朱棣的功过三重奏",
+          "episodeNo": 1,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685035140515464555",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685035140515464555",
+          "duration": 2131,
+          "publishedAt": "2026-09-27",
+          "summary": "朱棣是明朝第三代皇帝，却以“二次开国”之功奠定276年国运。他武征漠北、迁都北京、修《永乐大典》、派郑和下西洋，成就远迈汉唐，却因得位不正、滥杀文臣而毁誉参半。"
+        },
+        {
+          "awemeId": "7689796837355761270",
+          "title": "朱棣生母之谜：被抹去的蒙古女子与大报恩寺的秘密",
+          "episodeNo": 2,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7689796837355761270",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7689796837355761270",
+          "duration": 2185,
+          "publishedAt": "2026-09-28",
+          "summary": "正史称朱棣为马皇后所生，但野史与史料矛盾暗示其生母实为一位无名蒙古女子。这一真相被永乐帝终生隐瞒。"
+        }
+      ],
+      "nEpisodes": 2
+    },
+    {
+      "id": "col-c5826e",
+      "name": "《王立群大风歌》",
+      "accountId": "shiyuan-qingtan",
+      "accountName": "史苑轻谈",
+      "cover": "https://p3-pc-sign.douyinpic.com/tos-cn-i-0813c001/oUAAUOiIEAgphr2fyniCbbD458fmxAAsBC59A2~tplv-dy-cropcenter:323:430.jpeg?lk3s=138a59ce&x-expires=2106583200&x-signature=DX8A1syFftXYLMGxMLhNP9Z21P4%3D&from=327834062&s=PackSourceEnum_PUBLISH&se=true&sh=323_430&sc=cover&biz_tag=pcweb_cover&l=202610060247070E565BC13D33236C4BF6",
+      "sort": 0,
+      "episodeTotal": 45,
+      "episodes": [
+        {
+          "awemeId": "7627866168766025059",
+          "title": "传奇皇帝刘邦：布衣天子的五大传奇",
+          "episodeNo": 1,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7627866168766025059",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7627866168766025059",
+          "duration": 2074,
+          "publishedAt": "2026-04-12",
+          "summary": "从平民到开国皇帝，刘邦仅用七年。出生神异、赊酒生龙、面相定姻、斩蛇起义、云气隐踪——他的每一段经历都充满传奇色彩。"
+        }
+      ],
+      "nEpisodes": 1
+    },
+    {
+      "id": "col-6b028b",
+      "name": "《王立群读汉武帝》",
+      "accountId": "shiyuan-qingtan",
+      "accountName": "史苑轻谈",
+      "cover": "https://p3-pc-sign.douyinpic.com/tos-cn-i-0813c001/oc9CkAwfAnAIXA3qDLCFEdGoEC3fFABgKgDtAX~tplv-dy-cropcenter:323:430.jpeg?lk3s=138a59ce&x-expires=2106583200&x-signature=0I5%2BRcZ2mRnVihR2iOmtsyeZ2og%3D&from=327834062&s=PackSourceEnum_PUBLISH&se=true&sh=323_430&sc=cover&biz_tag=pcweb_cover&l=202610060247070E565BC13D33236C4BF6",
+      "sort": 0,
+      "episodeTotal": 36,
+      "episodes": [
+        {
+          "awemeId": "7683342724355692371",
+          "title": "王立群读汉武帝｜第二十集：借刀杀人",
+          "episodeNo": 20,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7683342724355692371",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7683342724355692371",
+          "duration": 2038,
+          "publishedAt": "2026-09-10",
+          "summary": "公孙弘借齐厉王自杀事件构陷主父偃，以谗言促其被杀；董仲舒亦遭其排挤。汉武帝冷酷权衡，终借主父偃之死平息诸侯不满。"
+        },
+        {
+          "awemeId": "7683510201312170579",
+          "title": "琴挑文君：一场精心设计的劫财劫色",
+          "episodeNo": 21,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7683510201312170579",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7683510201312170579",
+          "duration": 2114,
+          "publishedAt": "2026-09-11",
+          "summary": "民间盛传司马相如与卓文君自由恋爱的浪漫故事，但《史记》《汉书》暗藏曲笔，历代学者直指其“窃资窃妻”。"
+        },
+        {
+          "awemeId": "7683510775923404883",
+          "title": "情变之谜：卓文君如何以宽恕与智慧守护婚姻",
+          "episodeNo": 22,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7683510775923404883",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7683510775923404883",
+          "duration": 2089,
+          "publishedAt": "2026-09-12",
+          "summary": "司马相如得势后欲纳妾，卓文君以《白头吟》明志，不放任、不放弃，用原则与经济独立重塑丈夫形象。"
+        },
+        {
+          "awemeId": "7683511871639891126",
+          "title": "以死杀人：张汤之死与汉武帝朝的政治暗流",
+          "episodeNo": 23,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7683511871639891126",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7683511871639891126",
+          "duration": 2077,
+          "publishedAt": "2026-09-13",
+          "summary": "张汤被三长史诬告致死，临终反指真凶；其母薄葬明志，汉武帝彻查后诛杀四人。一命换四命，背后是陵园案、李文案两大隐情。"
+        },
+        {
+          "awemeId": "7683512930559125994",
+          "title": "王立群读汉武帝｜第二十四集：童言无忌",
+          "episodeNo": 24,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7683512930559125994",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7683512930559125994",
+          "duration": 2090,
+          "publishedAt": "2026-09-14",
+          "summary": "本集聚焦汉武帝朝特立独行的直臣汲黯，解析其屡次抗旨、直言批君却始终被容忍的深层原因。"
+        },
+        {
+          "awemeId": "7683513455006356726",
+          "title": "淮南大案：一场未及爆发的诸侯王叛乱",
+          "episodeNo": 25,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7683513455006356726",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7683513455006356726",
+          "duration": 2079,
+          "publishedAt": "2026-09-15",
+          "summary": "淮南王刘安谋反案是汉武帝朝最大诸侯叛乱，却因亲信告密、内部崩解而胎死腹中。"
+        },
+        {
+          "awemeId": "7685025040546455467",
+          "title": "皇室恩怨：刘长之死与汉文帝的隐忍杀机",
+          "episodeNo": 26,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685025040546455467",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685025040546455467",
+          "duration": 2084,
+          "publishedAt": "2026-09-16",
+          "summary": "淮南王刘长身世悲惨，成年后弑审食其、僭越称制、终致谋反被废，绝食而死。其死因背后，是汉文帝的纵容还是精心设计？"
+        },
+        {
+          "awemeId": "7685025538867675305",
+          "title": "一错再错：衡山王刘赐的覆灭之路",
+          "episodeNo": 27,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685025538867675305",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685025538867675305",
+          "duration": 2075,
+          "publishedAt": "2026-09-17",
+          "summary": "衡山王刘赐因秘书跳槽震怒，打压内史反遭汉武帝削权，继而家庭崩坏、密谋造反，终致国除身死。"
+        },
+        {
+          "awemeId": "7685026114151040932",
+          "title": "王立群读汉武帝｜第二十八集：另类奇才",
+          "episodeNo": 28,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685026114151040932",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685026114151040932",
+          "duration": 2066,
+          "publishedAt": "2026-09-18",
+          "summary": "东方朔以海吹求职、恶搞自荐、索赏解嘲、智辨邹牙、一年一换妻、打包挑绢、戏破谜题七事，将朝堂当隐居之地，成就汉武帝身边独一无二的“大隐”弄臣。"
+        },
+        {
+          "awemeId": "7685026695498679722",
+          "title": "庐山真面：王立群解读真实的东方朔",
+          "episodeNo": 29,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685026695498679722",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685026695498679722",
+          "duration": 2069,
+          "publishedAt": "2026-09-19",
+          "summary": "东方朔滑稽表象之下，是怀才不遇的苦闷与坚守原则的刚毅。三件正史记载之事，揭开大隐于朝的真实面目。"
+        },
+        {
+          "awemeId": "7685027703662099940",
+          "title": "一代将星：卫青的人品、君臣关系与婚姻",
+          "episodeNo": 30,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685027703662099940",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685027703662099940",
+          "duration": 2075,
+          "publishedAt": "2026-09-20",
+          "summary": "卫青不仅是汉匈战争中的军事统帅，更是谦恭自守、深谙进退的政治家。本文从人品、君臣关系、婚姻三方面还原其真实人生。"
+        },
+        {
+          "awemeId": "7685028545390711017",
+          "title": "万石之家：石庆与汉武帝时代的丞相政治",
+          "episodeNo": 31,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685028545390711017",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685028545390711017",
+          "duration": 2075,
+          "publishedAt": "2026-09-21",
+          "summary": "石庆出身“万石君”家族，靠恭谨家教与皇室信任登上丞相之位，却无治国之才，九年间无所建树。"
+        },
+        {
+          "awemeId": "7685029076948819283",
+          "title": "宠信江充：汉武帝晚年的致命误判",
+          "episodeNo": 32,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685029076948819283",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685029076948819283",
+          "duration": 2074,
+          "publishedAt": "2026-09-22",
+          "summary": "一纸御状扳倒赵国太子，江充凭胆识与心机跃居权力巅峰。他真如汉武帝所赞“人臣荡如是矣”？还是借刀杀人的阴鸷鹰犬？"
+        },
+        {
+          "awemeId": "7685029658225029366",
+          "title": "太子失宠：汉武帝与刘据关系的五阶段演变",
+          "episodeNo": 33,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685029658225029366",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685029658225029366",
+          "duration": 2074,
+          "publishedAt": "2026-09-23",
+          "summary": "王立群解析汉武帝与太子刘据从情深到危殆的五个关键阶段，揭示权力、亲情与政治猜忌如何撕裂父子关系。"
+        },
+        {
+          "awemeId": "7685030959444427499",
+          "title": "临终托孤：汉武帝晚年的悔悟与布局",
+          "episodeNo": 34,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685030959444427499",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685030959444427499",
+          "duration": 2086,
+          "publishedAt": "2026-09-25",
+          "summary": "太子冤死后，汉武帝追悔莫及，启动平反、政策转向与托孤布局。一场由梦启端的救赎，最终以杀母立子收场。"
+        },
+        {
+          "awemeId": "7685031687101510249",
+          "title": "功过千秋：王立群解读汉武帝的复杂性",
+          "episodeNo": 35,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685031687101510249",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685031687101510249",
+          "duration": 2065,
+          "publishedAt": "2026-09-26",
+          "summary": "汉武帝一生功业卓绝，争议亦贯穿两千年。本文从武功、文治、多面性、制度成因与历史评价五维，还原一个真实而复杂的帝王。"
+        },
+        {
+          "awemeId": "7685033166003826852",
+          "title": "巫蛊之祸：汉武帝晚年的信任崩塌与父子悲剧",
+          "episodeNo": 36,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685033166003826852",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685033166003826852",
+          "duration": 2073,
+          "publishedAt": "2026-09-24",
+          "summary": "征和二年，一场由巫蛊引发的宫廷风暴席卷长安。太子刘据被逼起兵，最终逃亡自尽，皇后卫子夫自杀，数万人牵连被杀。"
+        }
+      ],
+      "nEpisodes": 17
+    },
+    {
+      "id": "col-3957fe",
+      "name": "《王立群读秦始皇》",
+      "accountId": "shiyuan-qingtan",
+      "accountName": "史苑轻谈",
+      "cover": "https://p3-pc-sign.douyinpic.com/tos-cn-i-0813/ooHIUoamADuTvChYDsFCgyQE9A8fAUnfAACqAF~tplv-dy-cropcenter:323:430.jpeg?lk3s=138a59ce&x-expires=2106583200&x-signature=KjunEVhRwK7coGDfOAcMGlXnOuc%3D&from=327834062&s=PackSourceEnum_PUBLISH&se=true&sh=323_430&sc=cover&biz_tag=pcweb_cover&l=202610060247070E565BC13D33236C4BF6",
+      "sort": 0,
+      "episodeTotal": 47,
+      "episodes": [
+        {
+          "awemeId": "7659599025548684264",
+          "title": "荆轲刺秦：秦始皇一生最危险的时刻",
+          "episodeNo": 1,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7659599025548684264",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7659599025548684264",
+          "duration": 2148,
+          "publishedAt": "2026-07-07",
+          "summary": "公元前227年，燕国使者荆轲携地图与人头入秦宫受降，图穷匕见，上演中国历史上最惊心动魄的刺杀一幕。"
+        }
+      ],
+      "nEpisodes": 1
+    },
+    {
+      "id": "col-c63688",
+      "name": "《穷查理宝典》完整阅读",
+      "accountId": "baijia-caidu",
+      "accountName": "百家财读",
+      "cover": "https://p3-pc-sign.douyinpic.com/tos-cn-i-dy/ab957503eda54247a6b880334bb138c3~tplv-dy-cropcenter:323:430.jpeg?lk3s=138a59ce&x-expires=2106583200&x-signature=ghPU0GMAc%2FiFgcoxjlD1RLvr8FI%3D&from=327834062&s=PackSourceEnum_PUBLISH&se=true&sh=323_430&sc=cover&biz_tag=pcweb_cover&l=202610060247337EA4A9BF6A59194E9E58",
+      "sort": 0,
+      "episodeTotal": 9,
+      "episodes": [
+        {
+          "awemeId": "7675690902236499206",
+          "title": "《穷查理宝典》完整阅读（第1集）：查理·芒格传略",
+          "episodeNo": 1,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7675690902236499206",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7675690902236499206",
+          "duration": 2063,
+          "publishedAt": "2026-08-19",
+          "summary": "本集完整梳理查理·芒格早年生活、教育背景、职业起步与思想雏形，展现其理性、自律与终身学习的底层逻辑。"
+        },
+        {
+          "awemeId": "7675942880493505826",
+          "title": "《穷查理宝典》第二章精读：西塞罗论晚年",
+          "episodeNo": 2,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7675942880493505826",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7675942880493505826",
+          "duration": 1433,
+          "publishedAt": "2026-08-20",
+          "summary": "芒格借西塞罗《论老年》重释衰老——晚年不是衰退，而是智慧与德行的丰收期。"
+        },
+        {
+          "awemeId": "7676008914793565449",
+          "title": "《穷查理宝典》第三章精读：意念晚辈谈芒格",
+          "episodeNo": 3,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7676008914793565449",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7676008914793565449",
+          "duration": 1677,
+          "publishedAt": "2026-08-20",
+          "summary": "本章收录芒格子女及亲友九则真实回忆，展现其公平、守信、深思、坚韧与温情的家庭教育日常。"
+        },
+        {
+          "awemeId": "7676296181399473459",
+          "title": "《穷查理宝典》第四章精读：芒格主义——查理的即席谈话",
+          "episodeNo": 4,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7676296181399473459",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7676296181399473459",
+          "duration": 2067,
+          "publishedAt": "2026-08-21",
+          "summary": "本章整理自伯克希尔与西科年会实录，涵盖投资理念、生活哲学、致富路径等12大主题，呈现芒格原汁原味的思维锋芒。"
+        },
+        {
+          "awemeId": "7676761631388339466",
+          "title": "《穷查理宝典》第五章精读：资本成本、机会成本与金融乱象",
+          "episodeNo": 5,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7676761631388339466",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7676761631388339466",
+          "duration": 1667,
+          "publishedAt": "2026-08-22",
+          "summary": "本集深入解析资本成本与机会成本的本质，揭露华尔街道德滑坡、衍生品风险、会计堕落及基金行业激励失灵。"
+        },
+        {
+          "awemeId": "7676857276291878182",
+          "title": "芒格私人书单：11本塑造顶级财商的世界级经典",
+          "episodeNo": 6,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7676857276291878182",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7676857276291878182",
+          "duration": 2034,
+          "publishedAt": "2026-08-22",
+          "summary": "查理·芒格亲荐的11本跨学科经典，从牛顿力学到生态哲学，构建多元思维模型底层框架。"
+        },
+        {
+          "awemeId": "7677137333732281654",
+          "title": "《穷查理宝典》第七章精读：经济思维的跨学科图谱",
+          "episodeNo": 7,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7677137333732281654",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7677137333732281654",
+          "duration": 1781,
+          "publishedAt": "2026-08-23",
+          "summary": "芒格推崇的7本经济学经典，揭示财富、道德与制度的深层关联，构建理性决策的多元思维模型。"
+        },
+        {
+          "awemeId": "7684269299598396735",
+          "title": "《穷查理宝典》第八章精读：芒格亲荐的7本投资经典",
+          "episodeNo": 8,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7684269299598396735",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7684269299598396735",
+          "duration": 1407,
+          "publishedAt": "2026-09-11",
+          "summary": "芒格如何选书？他为何反复推荐费舍、格雷厄姆、哈格斯特朗等人的著作？本集梳理其投资思想源头与实践逻辑。"
+        },
+        {
+          "awemeId": "7684477992776584491",
+          "title": "《穷查理宝典》第九章“人生”：芒格推荐的七本塑造心智的经典",
+          "episodeNo": 9,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7684477992776584491",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7684477992776584491",
+          "duration": 1692,
+          "publishedAt": "2026-09-12",
+          "summary": "芒格以七部文学与传记作品为镜，揭示习惯、爱、跨学科思维、责任与精神自由的本质。"
+        }
+      ],
+      "nEpisodes": 9
+    },
+    {
+      "id": "col-f601b0",
+      "name": "人生修行法则",
+      "accountId": "tiandao-kaiwu",
+      "accountName": "天道开悟录",
+      "cover": "https://p3-pc-sign.douyinpic.com/tos-cn-i-0813c000-ce/oIFMAv7bhFFAyB7AIVEDlefKQAo7gfuQJQvq57~tplv-dy-cropcenter:323:430.jpeg?lk3s=138a59ce&x-expires=2106583200&x-signature=CHelzsEf9fKn62SNo66qR%2BO3QBE%3D&from=327834062&s=PackSourceEnum_PUBLISH&se=true&sh=323_430&sc=cover&biz_tag=pcweb_cover&l=2026100602472068B8C451EB1DEB51D549",
+      "sort": 0,
+      "episodeTotal": 8,
+      "episodes": [
+        {
+          "awemeId": "7689861481387008369",
+          "title": "精神供养：让一群人为你卖命",
+          "episodeNo": 1,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7689861481387008369",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7689861481387008369",
+          "duration": 283,
+          "publishedAt": "2026-09-26",
+          "summary": "忠诚无法靠金钱收买或权力压制，真正的死忠源于四层精神供养：极致容错、绝对公平、深度懂得、逆境定力。"
+        },
+        {
+          "awemeId": "7685393631818279867",
+          "title": "天道忌满，人生莫求十全",
+          "episodeNo": 2,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685393631818279867",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685393631818279867",
+          "duration": 357,
+          "publishedAt": "2026-09-14",
+          "summary": "天道从不允诺圆满，得到与失去如影随形。真正的福气不在极盛，而在知止、守中、厚德载物。"
+        },
+        {
+          "awemeId": "7685020469468621169",
+          "title": "一定要远离业力很深的人",
+          "episodeNo": 3,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685020469468621169",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685020469468621169",
+          "duration": 375,
+          "publishedAt": "2026-09-13",
+          "summary": "业力不是迷信，而是代际创伤的生理烙印与心理惯性。破除它只需三步：觉察冻结、逆向选择、意义锚点重塑。"
+        },
+        {
+          "awemeId": "7682411036079990649",
+          "title": "凡是负能量的东西，千万不要去回应",
+          "episodeNo": 4,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7682411036079990649",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7682411036079990649",
+          "duration": 318,
+          "publishedAt": "2026-09-06",
+          "summary": "不争不是软弱，而是顺应规律的顶级智慧。不与消耗你的人事纠缠，是对自己最深的保护。"
+        },
+        {
+          "awemeId": "7682061022824717243",
+          "title": "如何科学地提升运气",
+          "episodeNo": 5,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7682061022824717243",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7682061022824717243",
+          "duration": 289,
+          "publishedAt": "2026-09-05",
+          "summary": "运气不是天注定的盲盒，而是一门可修炼的技术。本文拆解运气的底层逻辑，教你用松弛、敬畏与利他，主动造运。"
+        },
+        {
+          "awemeId": "7680566601271829691",
+          "title": "在黑白之间，走出自己的方向",
+          "episodeNo": 6,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7680566601271829691",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7680566601271829691",
+          "duration": 300,
+          "publishedAt": "2026-09-01",
+          "summary": "社会化程度越高，越能接纳世界的灰度。接受灰度不是妥协，而是清醒认知人性与现实的复杂，在矛盾中守住底线、锚定方向。"
+        },
+        {
+          "awemeId": "7680305405751189625",
+          "title": "低谷不是深渊，是重塑内核的起点",
+          "episodeNo": 7,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7680305405751189625",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7680305405751189625",
+          "duration": 381,
+          "publishedAt": "2026-09-01",
+          "summary": "真正觉醒从不是被点醒，而是被生活千刀万剐后，三重虚妄幻想彻底崩塌的那一刻。"
+        },
+        {
+          "awemeId": "7679084874771104433",
+          "title": "放下多余执念，古今逍遥",
+          "episodeNo": 8,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7679084874771104433",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7679084874771104433",
+          "duration": 375,
+          "publishedAt": "2026-08-28",
+          "summary": "拖垮人的不是现实之难，而是停不下来的精神内耗。从立定内心到清空后台，一套源自《道德经》与心学的四步定心法。"
+        }
+      ],
+      "nEpisodes": 8
+    },
+    {
+      "id": "col-c7d2ad",
+      "name": "十分钟精读一本书",
+      "accountId": "sanzhen-dushu",
+      "accountName": "三分钟读一本书",
+      "cover": "https://p3-pc-sign.douyinpic.com/tos-cn-i-dy/28c5bd1b2e4144989ed4e5ca2a52e946~tplv-dy-cropcenter:323:430.jpeg?lk3s=138a59ce&x-expires=2106583200&x-signature=gm%2BkhythOqUDb4s5GHO4v31KdjQ%3D&from=327834062&s=PackSourceEnum_PUBLISH&se=true&sh=323_430&sc=cover&biz_tag=pcweb_cover&l=20261006024701C5931B51ED0CED8C0292",
+      "sort": 0,
+      "episodeTotal": 298,
+      "episodes": [
+        {
+          "awemeId": "7657899526702845210",
+          "title": "《僧侣与哲学家》：在失控时代找回内心的自由",
+          "episodeNo": 279,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7657899526702845210",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7657899526702845210",
+          "duration": 576,
+          "publishedAt": "2026-07-02",
+          "summary": "科技越发达，我们越不自由。这本书揭示爽≠幸福、关系≠治愈、放手≠放弃，带你穿越情绪迷雾，重拾内在主权。"
+        },
+        {
+          "awemeId": "7658287737807703359",
+          "title": "《正念的奇迹》：从梦游到在场，十分钟找回活着的感觉",
+          "episodeNo": 280,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7658287737807703359",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7658287737807703359",
+          "duration": 629,
+          "publishedAt": "2026-07-03",
+          "summary": "我们总在赶路，却从未真正停留。一行禅师用最朴素的语言揭示：奇迹不在远方，就在你此刻的呼吸里。"
+        },
+        {
+          "awemeId": "7659399528239402240",
+          "title": "十分钟精读《逃不开的经济周期》：看懂经济四季，顺势而为",
+          "episodeNo": 281,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7659399528239402240",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7659399528239402240",
+          "duration": 624,
+          "publishedAt": "2026-07-06",
+          "summary": "经济如四季轮回，起点不是政策或技术，而是人心中的信心。读懂周期信号，普通人也能避开大坑、抓住机会。"
+        },
+        {
+          "awemeId": "7661610626489322790",
+          "title": "十分钟精读《第一性原理》：摆脱经验陷阱，从本质重建思考",
+          "episodeNo": 282,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7661610626489322790",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7661610626489322790",
+          "duration": 555,
+          "publishedAt": "2026-07-12",
+          "summary": "为什么同样努力，有人突破困局，有人原地打转？答案藏在思维模式里——第一性原理教我们剥离表象，回归事物最底层的真相。"
+        },
+        {
+          "awemeId": "7666466606284852480",
+          "title": "如何做到爱孩子，也被孩子爱：用爱、理性与逻辑重新养育",
+          "episodeNo": 283,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7666466606284852480",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7666466606284852480",
+          "duration": 492,
+          "publishedAt": "2026-07-25",
+          "summary": "爱不是万能解药。法国心理学家阿兰·布拉克尼耶指出：养孩子缺的不是爱，而是理性和逻辑。"
+        },
+        {
+          "awemeId": "7668646585873583423",
+          "title": "《大脑效率革命》：抢回每天最贵的90分钟",
+          "episodeNo": 284,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7668646585873583423",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7668646585873583423",
+          "duration": 519,
+          "publishedAt": "2026-07-31",
+          "summary": "普通人一天真正高效的时间不超过3小时。你不是不够自律，而是把最宝贵的黄金90分钟用错了地方。"
+        },
+        {
+          "awemeId": "7670512091815628038",
+          "title": "《真爱之道》：我们吵的不是垃圾，是没被治好的旧伤",
+          "episodeNo": 285,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7670512091815628038",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7670512091815628038",
+          "duration": 500,
+          "publishedAt": "2026-08-05",
+          "summary": "亲密关系中的争吵，往往不是为小事，而是为童年未被看见的恐惧。这本书揭开四层真相：药效、镜子、旧伤、遥控器。"
+        },
+        {
+          "awemeId": "7674961744095087878",
+          "title": "十分钟精读《养育男孩》：读懂男孩成长的三段旅程",
+          "episodeNo": 286,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7674961744095087878",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7674961744095087878",
+          "duration": 493,
+          "publishedAt": "2026-08-17",
+          "summary": "澳大利亚专家史蒂夫·比达尔夫用30年临床经验+脑科学，拆解男孩成长密码：三阶段、大脑差异、父亲角色缺一不可。"
+        },
+        {
+          "awemeId": "7677228791344778531",
+          "title": "十分钟精读《看见孩子》：读懂孩子哭闹背后的情绪暗流",
+          "episodeNo": 287,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7677228791344778531",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7677228791344778531",
+          "duration": 509,
+          "publishedAt": "2026-08-23",
+          "summary": "孩子打滚、发脾气不是不听话，而是被情绪淹没的求救信号。贝基肯尼迪博士用临床心理学视角，帮父母重建与孩子的深度连接。"
+        },
+        {
+          "awemeId": "7677565777926491442",
+          "title": "十分钟精读《人性的法则》：看懂人心，才能掌控人生",
+          "episodeNo": 288,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7677565777926491442",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7677565777926491442",
+          "duration": 429,
+          "publishedAt": "2026-08-24",
+          "summary": "我们并不理性，戴着面具生活，内心藏着阴影。读懂人性的底层逻辑，不是为了算计他人，而是为了活得更清醒、更松弛。"
+        },
+        {
+          "awemeId": "7679035446063664436",
+          "title": "请这样对待孩子的大脑：用脑科学读懂孩子的行为",
+          "episodeNo": 289,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7679035446063664436",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7679035446063664436",
+          "duration": 536,
+          "publishedAt": "2026-08-28",
+          "summary": "孩子发脾气不是故意作对，而是大脑尚未发育成熟。神经心理学家阿尔瓦罗·毕尔巴鄂揭示养育背后的科学逻辑。"
+        },
+        {
+          "awemeId": "7679424562219486502",
+          "title": "十分钟精读《芒格之道》：一位智者的朴素大道",
+          "episodeNo": 290,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7679424562219486502",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7679424562219486502",
+          "duration": 516,
+          "publishedAt": "2026-08-29",
+          "summary": "查理·芒格用近百年人生凝练出的朴素智慧：走大道、守能力圈、反着想、信复利、调期待。"
+        },
+        {
+          "awemeId": "7679799229262417203",
+          "title": "世界精英都在用的高效休息法：让大脑真正关机",
+          "episodeNo": 291,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7679799229262417203",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7679799229262417203",
+          "duration": 418,
+          "publishedAt": "2026-08-30",
+          "summary": "你以为在休息，其实大脑还在加班。日本脑科学家久贺谷亮揭示：真正的休息不是躺平，而是训练大脑回到当下。"
+        },
+        {
+          "awemeId": "7680527547729284393",
+          "title": "真希望我父母读过这本书：十分钟精读菲利帕·佩里",
+          "episodeNo": 292,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7680527547729284393",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7680527547729284393",
+          "duration": 540,
+          "publishedAt": "2026-09-01",
+          "summary": "英国心理治疗师菲利帕·佩里揭示亲子关系中的代际循环，强调关系、倾听与内在力量比技巧更重要。"
+        },
+        {
+          "awemeId": "7680916187445742874",
+          "title": "凡事发生皆有利于我：把苦难炼成黄金的五步心法",
+          "episodeNo": 293,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7680916187445742874",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7680916187445742874",
+          "duration": 569,
+          "publishedAt": "2026-09-02",
+          "summary": "日本作家喜多川泰教你将逆境转为成长契机，用五步实操法把生活抛来的铅块，一寸寸炼成金子。"
+        },
+        {
+          "awemeId": "7685360501546552617",
+          "title": "十分钟精读《当下的力量》：在思维洪流中找回临在",
+          "episodeNo": 294,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685360501546552617",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685360501546552617",
+          "duration": 496,
+          "publishedAt": "2026-09-14",
+          "summary": "我们越想摆脱焦虑，焦虑越紧；越想掌控未来，越深陷痛苦。《当下的力量》揭示：痛苦不在外界，而在我们把思维当成了自己。"
+        },
+        {
+          "awemeId": "7685733552801008946",
+          "title": "正念的奇迹：在每一口饭、每一次呼吸中回家",
+          "episodeNo": 295,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685733552801008946",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685733552801008946",
+          "duration": 508,
+          "publishedAt": "2026-09-15",
+          "summary": "一行禅师用最朴素的语言揭示正念的本质：不是逃离生活，而是真正回到此刻。洗碗时洗碗，吃饭时吃饭，呼吸时呼吸。"
+        },
+        {
+          "awemeId": "7686845854124150056",
+          "title": "高效能人士的七个习惯：三把钥匙与自我更新",
+          "episodeNo": 296,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7686845854124150056",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7686845854124150056",
+          "duration": 502,
+          "publishedAt": "2026-09-18",
+          "summary": "读懂史蒂芬·科维经典，掌握积极主动、以终为始、要事第一三大核心习惯，重建人生地图。"
+        },
+        {
+          "awemeId": "7689432522798664996",
+          "title": "《亲密关系》：四阶段看清爱情真相",
+          "episodeNo": 297,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7689432522798664996",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7689432522798664996",
+          "duration": 467,
+          "publishedAt": "2026-09-25",
+          "summary": "为什么恋爱容易开始却难长久？本书揭示亲密关系必经的月晕、幻灭、内省、启示四阶段，帮我们从争吵中读懂自己。"
+        },
+        {
+          "awemeId": "7689798187174907155",
+          "title": "教出乐观的孩子：塞利格曼的儿童心理免疫系统",
+          "episodeNo": 298,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7689798187174907155",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7689798187174907155",
+          "duration": 400,
+          "publishedAt": "2026-09-26",
+          "summary": "乐观不是天赋，而是可习得的能力。本书揭示如何用解释风格、反驳技巧与言传身教，帮孩子建立抵御沮丧的心理免疫力。"
+        }
+      ],
+      "nEpisodes": 20
+    },
+    {
+      "id": "col-7ae27d",
+      "name": "识人与修心",
+      "accountId": "tiandao-kaiwu",
+      "accountName": "天道开悟录",
+      "cover": "https://p9-pc-sign.douyinpic.com/tos-cn-i-0813c000-ce/octf75AdVQ8ABAJfkEXX0KBQgyMArZAtHg8fEu~tplv-dy-cropcenter:323:430.jpeg?lk3s=138a59ce&x-expires=2106583200&x-signature=DdK%2Fgd9U8Sxc45aQc%2FP2PckE2js%3D&from=327834062&s=PackSourceEnum_PUBLISH&se=true&sh=323_430&sc=cover&biz_tag=pcweb_cover&l=2026100602472068B8C451EB1DEB51D549",
+      "sort": 0,
+      "episodeTotal": 6,
+      "episodes": [
+        {
+          "awemeId": "7687583174445053371",
+          "title": "面相识人 | 一眼看穿对方底牌的硬核科学",
+          "episodeNo": 1,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7687583174445053371",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7687583174445053371",
+          "duration": 426,
+          "publishedAt": "2026-09-20",
+          "summary": "看脸不是玄学，而是神经科学、心理学与中医气血理论交叉验证的识人硬核方法。"
+        },
+        {
+          "awemeId": "7683537873099277498",
+          "title": "真正的开悟：破人间七相",
+          "episodeNo": 2,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7683537873099277498",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7683537873099277498",
+          "duration": 596,
+          "publishedAt": "2026-09-09",
+          "summary": "所有内耗、委屈与不甘，皆因执着于七重虚妄假象。破相即破局，看穿方得自在。"
+        },
+        {
+          "awemeId": "7682812217184230329",
+          "title": "心邪者多疑，凡事不顺，先看自己",
+          "episodeNo": 3,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7682812217184230329",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7682812217184230329",
+          "duration": 373,
+          "publishedAt": "2026-09-07",
+          "summary": "心邪者多疑，量小者易怒，才疏者好辩，志短者长怨——四句话道破人生困局的根源不在外界，而在内心格局。"
+        },
+        {
+          "awemeId": "7677968607775638201",
+          "title": "看透人性，守住自己：《道德经》五条护身铁律",
+          "episodeNo": 4,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7677968607775638201",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7677968607775638201",
+          "duration": 317,
+          "publishedAt": "2026-08-25",
+          "summary": "真正的高手为何总带三分距离感？道家五条铁律，帮你斩断人际内耗，守住能量边界。"
+        },
+        {
+          "awemeId": "7677606044109632497",
+          "title": "一个人见过世面的最高境界",
+          "episodeNo": 5,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7677606044109632497",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7677606044109632497",
+          "duration": 253,
+          "publishedAt": "2026-08-24",
+          "summary": "真正见过大世面的人，不张扬、不争辩、不俯视，却让人不由自主靠近信任——老子所谓“和光同尘”，是四重脱胎换骨的修行。"
+        },
+        {
+          "awemeId": "7676306524687751611",
+          "title": "接纳来去离合，守住内心绝对主动权",
+          "episodeNo": 6,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7676306524687751611",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7676306524687751611",
+          "duration": 296,
+          "publishedAt": "2026-08-21",
+          "summary": "关系的本质是阶段性同行。不执守、不替代、不恐惧失去，才能把主动权牢牢握在自己手中。"
+        }
+      ],
+      "nEpisodes": 6
+    },
+    {
+      "id": "col-1dab31",
+      "name": "财富认知讲堂",
+      "accountId": "baijia-caidu",
+      "accountName": "百家财读",
+      "cover": "https://p3-pc-sign.douyinpic.com/tos-cn-i-dy/37a81db0c2a6499887163ec17207cdca~tplv-dy-cropcenter:323:430.jpeg?lk3s=138a59ce&x-expires=2106583200&x-signature=HZZ3v2duX35fFOSJeFdmL2PaXRU%3D&from=327834062&s=PackSourceEnum_PUBLISH&se=true&sh=323_430&sc=cover&biz_tag=pcweb_cover&l=202610060247337EA4A9BF6A59194E9E58",
+      "sort": 0,
+      "episodeTotal": 30,
+      "episodes": [
+        {
+          "awemeId": "7666088967791529256",
+          "title": "为什么越穷越拖延？拖延的脑科学真相与破局方法",
+          "episodeNo": 1,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7666088967791529256",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7666088967791529256",
+          "duration": 482,
+          "publishedAt": "2026-07-24",
+          "summary": "贫穷的本质是拖延，而拖延的本质是认知负荷过载与大脑两大决策系统的冲突。理解这一机制，才能真正打破贫困循环。"
+        },
+        {
+          "awemeId": "7666261961897790739",
+          "title": "巴菲特1998年佛罗里达大学演讲：改变一生的6大人生智慧",
+          "episodeNo": 4,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7666261961897790739",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7666261961897790739",
+          "duration": 460,
+          "publishedAt": "2026-07-25",
+          "summary": "股神巴菲特1998年在佛罗里达大学的经典演讲，凝练6大朴素而深刻的人生智慧，至今仍直击本质、历久弥新。"
+        },
+        {
+          "awemeId": "7668870960195374362",
+          "title": "读懂段永平《大道》：知不可为，才是投资的顶级智慧",
+          "episodeNo": 20,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7668870960195374362",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7668870960195374362",
+          "duration": 950,
+          "publishedAt": "2026-08-01",
+          "summary": "段永平用二十余年实践凝练出一条朴素却锋利的投资心法：真正的智慧，是敢于对99%的机会说不。"
+        },
+        {
+          "awemeId": "7669084807128714539",
+          "title": "每天一杯拿铁，正在偷走你的百万财富？〈拿铁因素〉财商拆解",
+          "episodeNo": 21,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7669084807128714539",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7669084807128714539",
+          "duration": 759,
+          "publishedAt": "2026-08-01",
+          "summary": "看似微不足道的日常小额消费，长期累积竟可能吞噬百万财富。发现并掌控“拿铁因素”，是普通人实现财务自由的第一步。"
+        },
+        {
+          "awemeId": "7669406849019514127",
+          "title": "巴菲特挚友查理·芒格：99岁的人生智慧，值得反复品读",
+          "episodeNo": 22,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7669406849019514127",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7669406849019514127",
+          "duration": 534,
+          "publishedAt": "2026-08-02",
+          "summary": "读懂芒格36句真言，少走十年弯路。他与巴菲特联手缔造伯克希尔奇迹，其智慧远超投资，直指人生底层逻辑。"
+        },
+        {
+          "awemeId": "7669796006778654015",
+          "title": "避免愚蠢，才是顶级的聪明：查理·芒格的3个智慧法则",
+          "episodeNo": 23,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7669796006778654015",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7669796006778654015",
+          "duration": 721,
+          "publishedAt": "2026-08-03",
+          "summary": "真正的智慧不在于多聪明，而在于少犯蠢。芒格用逆向思维、多元模型与能力圈原则，教我们如何系统性避开毁灭性错误。"
+        },
+        {
+          "awemeId": "7670163751773031722",
+          "title": "为什么穷人一直穷？《贫穷的本质》揭示难以翻身的六大陷阱",
+          "episodeNo": 24,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7670163751773031722",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7670163751773031722",
+          "duration": 775,
+          "publishedAt": "2026-08-04",
+          "summary": "穷人不是不努力，而是被生存牢牢捆绑，掉进消费、健康、情绪、教育、信用等层层陷阱。本书用真实调研颠覆对贫穷的刻板印象。"
+        },
+        {
+          "awemeId": "7670355949932055854",
+          "title": "《孙子兵法》十大顶级谋略：读懂一半就赢了",
+          "episodeNo": 25,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7670355949932055854",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7670355949932055854",
+          "duration": 779,
+          "publishedAt": "2026-08-05",
+          "summary": "《孙子兵法》不是教人好战，而是教人不战而胜。十大思维涵盖博弈、决策、自省与破局，普通人掌握三五条即可跃升认知层级。"
+        },
+        {
+          "awemeId": "7670828503629106432",
+          "title": "《资治通鉴》48句传世名句：每一句都是处世大智慧",
+          "episodeNo": 26,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7670828503629106432",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7670828503629106432",
+          "duration": 995,
+          "publishedAt": "2026-08-06",
+          "summary": "《资治通鉴》凝练1362年治乱兴衰，48句原文箴言直指人性本质与处世根本，历久弥新。"
+        },
+        {
+          "awemeId": "7672652659261787434",
+          "title": "《史记·货殖列传》：两千年前的致富密码，今天依然管用",
+          "episodeNo": 27,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7672652659261787434",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7672652659261787434",
+          "duration": 821,
+          "publishedAt": "2026-08-11",
+          "summary": "司马迁在《货殖列传》中揭示财富运行底层逻辑：人性逐利本自然，勤勉为基、智慧放大、顺势而为、守道而富。"
+        },
+        {
+          "awemeId": "7673869395743034664",
+          "title": "《曾国藩传》降熵：最高级的处世智慧",
+          "episodeNo": 28,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7673869395743034664",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7673869395743034664",
+          "duration": 593,
+          "publishedAt": "2026-08-14",
+          "summary": "你总疲惫、焦虑、内耗？因为你正陷入“精神熵增”。从物理学熵增定律出发，理解曾国藩式的内在秩序重建法。"
+        },
+        {
+          "awemeId": "7675202524193819913",
+          "title": "纳瓦尔七大杠杆：普通人撬动人生的底层密码",
+          "episodeNo": 29,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7675202524193819913",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7675202524193819913",
+          "duration": 644,
+          "publishedAt": "2026-08-18",
+          "summary": "从《纳瓦尔宝典》提炼出改变人生的七大杠杆——说服力、能力产品化、程序、迭代、短期痛苦、专注力、自我价值，助你摆脱时间牢笼，实现指数级突破。"
+        },
+        {
+          "awemeId": "7685399457898269993",
+          "title": "《穷查理宝典》第十章“处事”精要解读：谈判力、影响力与人生智慧",
+          "episodeNo": 30,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685399457898269993",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685399457898269993",
+          "duration": 1509,
+          "publishedAt": "2026-09-14",
+          "summary": "本集梳理芒格推崇的七部经典著作核心思想，涵盖谈判原则、心理影响、领导力、非平等主义、老年观、友谊责任及儒家修身之道。"
+        }
+      ],
+      "nEpisodes": 13
+    },
+    {
+      "id": "col-89e446",
+      "name": "道德经",
+      "accountId": "tiandao-kaiwu",
+      "accountName": "天道开悟录",
+      "cover": "https://p3-pc-sign.douyinpic.com/tos-cn-i-0813c000-ce/oYCEE8IGAEeJm4OAOVntBfAIJALye7AWLnEkCg~tplv-dy-cropcenter:323:430.jpeg?lk3s=138a59ce&x-expires=2106583200&x-signature=GbXYBvBDW92SGtZKShDhYlX3PoA%3D&from=327834062&s=PackSourceEnum_PUBLISH&se=true&sh=323_430&sc=cover&biz_tag=pcweb_cover&l=2026100602472068B8C451EB1DEB51D549",
+      "sort": 0,
+      "episodeTotal": 5,
+      "episodes": [
+        {
+          "awemeId": "7686862385106263419",
+          "title": "斩尽三尸见真我",
+          "episodeNo": 1,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7686862385106263419",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7686862385106263419",
+          "duration": 444,
+          "publishedAt": "2026-09-18",
+          "summary": "道家所谓“斩三尸”，非斩外魔，而是破除善、恶、自我三重执念所筑的牢笼，回归清净本然的真我。"
+        },
+        {
+          "awemeId": "7684631332039359153",
+          "title": "反者道之动，弱者道之用：道德经里的生存智慧",
+          "episodeNo": 2,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7684631332039359153",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7684631332039359153",
+          "duration": 308,
+          "publishedAt": "2026-09-12",
+          "summary": "越缺什么越执着什么，越满越易崩；真正的力量不在锋芒，而在柔弱中的定力与留白。"
+        },
+        {
+          "awemeId": "7681295530529397498",
+          "title": "天之道，损有余而补不足",
+          "episodeNo": 3,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7681295530529397498",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7681295530529397498",
+          "duration": 451,
+          "publishedAt": "2026-09-03",
+          "summary": "天道追求平衡，人道加剧失衡。普通人破局的关键，在于看懂两套铁律并主动切换策略。"
+        },
+        {
+          "awemeId": "7678704455052210789",
+          "title": "以无为心，行有为法",
+          "episodeNo": 4,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7678704455052210789",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7678704455052210789",
+          "duration": 347,
+          "publishedAt": "2026-08-27",
+          "summary": "老子的“无为”不是躺平，而是两层顶级心法：对外不违规律，对内不执结果。苏轼用一生践行——接纳无常，顺势而为，反而无所不成。"
+        },
+        {
+          "awemeId": "7677245475720102897",
+          "title": "命运的漏洞就是不能过于兴奋",
+          "episodeNo": 5,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7677245475720102897",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7677245475720102897",
+          "duration": 295,
+          "publishedAt": "2026-08-23",
+          "summary": "老子说“宠辱若惊”，过度兴奋会触发命运的平衡法则。隐藏情绪、向命运撒谎、保持谦虚，才是与天道共舞的生存智慧。"
+        }
+      ],
+      "nEpisodes": 5
+    },
+    {
+      "id": "col-6ef674",
+      "name": "隐学精华节选",
+      "accountId": "tianya-shentie",
+      "accountName": "天涯神贴隐学",
+      "cover": "https://p3-pc-sign.douyinpic.com/tos-cn-i-dy/d900b78261114523a3211b484c947629~tplv-dy-cropcenter:323:430.jpeg?lk3s=138a59ce&x-expires=2106583200&x-signature=IlOHbqbHSR8pK0mK3qJWn%2FKWzNw%3D&from=327834062&s=PackSourceEnum_PUBLISH&se=true&sh=323_430&sc=cover&biz_tag=pcweb_cover&l=202610060247149819FF42229EE80CAF67",
+      "sort": 0,
+      "episodeTotal": 357,
+      "episodes": [
+        {
+          "awemeId": "7585561141569506614",
+          "title": "避免四祸 谨记四福：范蠡临终四句活命箴言",
+          "episodeNo": 275,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7585561141569506614",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7585561141569506614",
+          "duration": 344,
+          "publishedAt": "2025-12-19",
+          "summary": "商鞅五马分尸、韩信乱箭穿身、李斯腰斩……聪明人惨死的根源，藏在范蠡88岁临终说的四句话里。"
+        },
+        {
+          "awemeId": "7539210313648852233",
+          "title": "未来十年经济格局：4亿人进城重塑中国内需",
+          "episodeNo": 331,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7539210313648852233",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7539210313648852233",
+          "duration": 488,
+          "publishedAt": "2025-08-16",
+          "summary": "国家启动2025—2035十年计划，推动4亿人进城，通过土地流转、保障房、消费税改革等组合拳激活内需。"
+        },
+        {
+          "awemeId": "7690947173898259775",
+          "title": "物质低配、认知高配、心态顶配：35-45岁黄金十年的生存法则",
+          "episodeNo": 357,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7690947173898259775",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7690947173898259775",
+          "duration": 661,
+          "publishedAt": "2026-09-29",
+          "summary": "35至45岁是人生最关键的十年。物质低配保安全，认知高配抗变化，心态顶配稳内核。"
+        }
+      ],
+      "nEpisodes": 3
+    },
+    {
+      "id": "single-ca7e39",
+      "name": "天涯神贴隐学 · 单篇",
+      "accountId": "tianya-shentie",
+      "accountName": "天涯神贴隐学",
+      "cover": "https://p3-pc-sign.douyinpic.com/tos-cn-i-dy/54c1392be8e24d62b936f9ae44bac97a~tplv-dy-cropcenter:323:430.jpeg?lk3s=138a59ce&x-expires=2106583200&x-signature=coUFfPEjsfE5jzjbdBGQJjdroIU%3D&from=327834062&s=PackSourceEnum_PUBLISH&se=true&sh=323_430&sc=cover&biz_tag=pcweb_cover&l=202610060247149819FF42229EE80CAF67",
+      "sort": 900,
+      "episodeTotal": 0,
+      "episodes": [
+        {
+          "awemeId": "7689833299639848230",
+          "title": "养气能量场：一个家的上坡路，从堵住四个漏气口开始",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7689833299639848230",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7689833299639848230",
+          "duration": 747,
+          "publishedAt": "2026-09-26",
+          "summary": "家不是泄气的地方，而是养气的港湾。真正拖垮一个家庭的，从来不是贫穷，而是日积月累的情绪消耗。"
+        },
+        {
+          "awemeId": "7688324801588514075",
+          "title": "人生五道关：白手起家者的破局之路",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7688324801588514075",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7688324801588514075",
+          "duration": 726,
+          "publishedAt": "2026-09-22",
+          "summary": "寒门突围不是靠运气，而是闯过血脉囚笼、情爱泥潭、无用围城、绝境选择与自我破茧五道铁闸。"
+        },
+        {
+          "awemeId": "7687959406520061193",
+          "title": "少言为贵：七种必须闭嘴的时刻",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7687959406520061193",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7687959406520061193",
+          "duration": 265,
+          "publishedAt": "2026-09-21",
+          "summary": "话越多越蠢，一个字都不要说。真正厉害的人不是什么都能聊，而是知道什么能说、什么不能说。"
+        },
+        {
+          "awemeId": "7687206579489262911",
+          "title": "人生三处风水：修嘴、守正、养善",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7687206579489262911",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7687206579489262911",
+          "duration": 128,
+          "publishedAt": "2026-09-19",
+          "summary": "人身上的风水比房子重要十倍。管好嘴、不占小便宜、保持善良，是决定人生走向的三处核心风水。"
+        },
+        {
+          "awemeId": "7686493280111988022",
+          "title": "美国增长的三次转型：从房地产到规则竞争",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7686493280111988022",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7686493280111988022",
+          "duration": 526,
+          "publishedAt": "2026-09-18",
+          "summary": "美国为何总能在危机后重启增长？答案不在美元或科技单一因素，而在三次经济转型的连续切换能力。"
+        },
+        {
+          "awemeId": "7686481757545254154",
+          "title": "中美AI竞赛：半步领先的成本局",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7686481757545254154",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7686481757545254154",
+          "duration": 870,
+          "publishedAt": "2026-09-17",
+          "summary": "中国AI不急于登顶，而是以更低成本、更强工程力紧咬美国，将竞争拖入对方更难承受的成本消耗战。"
+        },
+        {
+          "awemeId": "7685724879185857818",
+          "title": "为什么中国不希望美国突然崩盘？",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685724879185857818",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685724879185857818",
+          "duration": 949,
+          "publishedAt": "2026-09-16",
+          "summary": "大国博弈不是街头斗殴，真正的战略高手计算的是对手衰亡的节奏与秩序。"
+        },
+        {
+          "awemeId": "7685708292101852426",
+          "title": "伊朗胡塞联手封喉沙特：十天改写中东海权格局",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685708292101852426",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685708292101852426",
+          "duration": 424,
+          "publishedAt": "2026-09-16",
+          "summary": "胡塞武装十天攻占7000平方公里，掌控曼德海峡；伊朗扼守霍尔木兹海峡——沙特两条石油命脉被伊朗阵营 simultaneous 按住。"
+        },
+        {
+          "awemeId": "7685402632441122084",
+          "title": "文明之鹰：中国空军体系化远征的里程碑",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685402632441122084",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685402632441122084",
+          "duration": 572,
+          "publishedAt": "2026-09-15",
+          "summary": "歼-16等多型战机远程赴埃及参训，标志中国空军从单机先进迈向体系远征能力跃升。"
+        },
+        {
+          "awemeId": "7685381919873223972",
+          "title": "把自己看得金贵",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685381919873223972",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685381919873223972",
+          "duration": 328,
+          "publishedAt": "2026-09-15",
+          "summary": "你内心如何定义自己，世界就如何对待你。金贵不是傲慢，而是清醒的自我珍视与不可侵犯的底线。"
+        },
+        {
+          "awemeId": "7685334499470626094",
+          "title": "如果解放军单挑整个北约，胜算有多大？",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685334499470626094",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685334499470626094",
+          "duration": 292,
+          "publishedAt": "2026-09-14",
+          "summary": "纸面兵力北约超340万，解放军仅200万，但现代战争比的不是人头，而是体系、质量与本土优势。"
+        },
+        {
+          "awemeId": "7684995379443649842",
+          "title": "二十载逆袭：歼-20亮剑长空",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7684995379443649842",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7684995379443649842",
+          "duration": 831,
+          "publishedAt": "2026-09-13",
+          "summary": "从仰望代差到同空博弈，歼-20二十年跨越的不是机型，而是一整套航空工业体系。"
+        },
+        {
+          "awemeId": "7682787622229396777",
+          "title": "观落阴：民间传说中的探阴术全解析",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7682787622229396777",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7682787622229396777",
+          "duration": 145,
+          "publishedAt": "2026-09-08",
+          "summary": "道门神秘的观落阴仪式，真能让人魂入地府见故人？本文梳理其起源、流程与禁忌，纯属民俗奇谈，理性看待。"
+        },
+        {
+          "awemeId": "7682805775609204011",
+          "title": "未来十年科技局势：2035年五大爆发点",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7682805775609204011",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7682805775609204011",
+          "duration": 277,
+          "publishedAt": "2026-09-07",
+          "summary": "活到2035年，人类或将亲历新一轮科技大爆炸。人形机器人量产、月球基地工业化、无人驾驶普及、火星移民启动、太空矿业萌芽，正在加速到来。"
+        },
+        {
+          "awemeId": "7682435684845604134",
+          "title": "详解三魂七魄：你不是一个人，而是十个住户的临时合租",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7682435684845604134",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7682435684845604134",
+          "duration": 569,
+          "publishedAt": "2026-09-06",
+          "summary": "道教1500年前提出“三魂七魄”说——你并非单一主体，而是十个独立功能单元共居一身。本文不谈迷信，只讲文化逻辑与身心结构。"
+        },
+        {
+          "awemeId": "7682046178166410534",
+          "title": "特斯拉正式打响无人驾驶终局之战",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7682046178166410534",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7682046178166410534",
+          "duration": 281,
+          "publishedAt": "2026-09-05",
+          "summary": "Cybercab量产发布，无方向盘、纯视觉、全闭环运营，成本压至13万元，星链直连，无人出行进入全民普及新阶段。"
+        },
+        {
+          "awemeId": "7681730472614874377",
+          "title": "颠覆出行史：特斯拉七大真相",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7681730472614874377",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7681730472614874377",
+          "duration": 187,
+          "publishedAt": "2026-09-05",
+          "summary": "9月3日特斯拉Cybercab发布在即，它不是新车，而是人类出行史的里程碑。七个硬核事实揭示无人驾驶时代的真正到来。"
+        },
+        {
+          "awemeId": "7680502274325515529",
+          "title": "杠杠造富、现金复利",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7680502274325515529",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7680502274325515529",
+          "duration": 324,
+          "publishedAt": "2026-09-03",
+          "summary": "当房产从硬通货变成负债黑洞，百万现金正成为新时代最稀缺的反脆弱资产。"
+        },
+        {
+          "awemeId": "7680497792518720795",
+          "title": "高敏感人格：不是病，是天赋",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7680497792518720795",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7680497792518720795",
+          "duration": 96,
+          "publishedAt": "2026-09-02",
+          "summary": "高敏感者不宜修儒佛，而应修道——减掉过度的善良、付出与敏感，回归阴阳平衡，方得圆满。"
+        },
+        {
+          "awemeId": "7367737927591300392",
+          "title": "上善治水：帛书本《道德经》第五十二章深度还原",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7367737927591300392",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7367737927591300392",
+          "duration": 865,
+          "publishedAt": "2024-05-11",
+          "summary": "本文依帛书本重解“上善治水”章，破除通本误读，揭示老子以水为法的修行本质与天道无亲的真义。"
+        }
+      ],
+      "nEpisodes": 20
+    },
+    {
+      "id": "single-ce320a",
+      "name": "天道开悟录 · 单篇",
+      "accountId": "tiandao-kaiwu",
+      "accountName": "天道开悟录",
+      "cover": "https://p3-pc-sign.douyinpic.com/tos-cn-i-0813c000-ce/owCmEoiBAhfEAxWA0qe3AtIIzAiav9AtHaCJlw~tplv-dy-cropcenter:323:430.jpeg?lk3s=138a59ce&x-expires=2106583200&x-signature=0ozWH9fFvRfpoCJZ56kz3ReiWb0%3D&from=327834062&s=PackSourceEnum_PUBLISH&se=true&sh=323_430&sc=cover&biz_tag=pcweb_cover&l=2026100602472068B8C451EB1DEB51D549",
+      "sort": 900,
+      "episodeTotal": 0,
+      "episodes": [
+        {
+          "awemeId": "7689847148443462522",
+          "title": "新官上任：四步建立真实威慑力",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7689847148443462522",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7689847148443462522",
+          "duration": 352,
+          "publishedAt": "2026-09-26",
+          "summary": "新领导坐不稳？张居正三个月驯服万历朝的用人铁律，直击职场权力本质。"
+        }
+      ],
+      "nEpisodes": 1
+    }
+  ]
+}

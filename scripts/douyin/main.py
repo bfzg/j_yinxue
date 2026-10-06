@@ -1,35 +1,26 @@
 """
-抖音视频 → 播客音频 → 字幕
-主流程入口
+抖音视频 → 播客音频 → 字幕 → 文章 → 发布
+全自动流程入口
 
 用法:
     # 使用 venv 中的 python
     .venv/bin/python main.py
 
-    # 或先激活 venv
-    source .venv/bin/activate
-    python main.py
+    # 完整流程（爬取→提取→转写→文章→发布）
+    python main.py --step all
 
-    # 只爬取下载（不提取音频、不生成字幕）
-    python main.py --step scrape
+    # 只生成文章（从已有 SRT）
+    python main.py --step article
 
-    # 只爬取 2 个视频测试
-    python main.py --step scrape --max 2
+    # 只发布最新文章
+    python main.py --step publish
 
-    # 只提取音频（从已下载的视频中）
-    python main.py --step extract
-
-    # 对已有 MP3 批量音量增益
-    python main.py --step boost
-
-    # 只生成字幕（从已有的 MP3 中）
-    python main.py --step transcribe
-
-    # 生成 playlist.json
-    python main.py --step playlist
+    # 管理面板
+    python main.py --step panel
 """
 import argparse
 import json
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -81,7 +72,6 @@ def step_extract(videos: list = None) -> list:
     """第二步: 提取音频"""
     from extractor import AudioExtractor
 
-    # 如果没有传入视频列表，从目录中递归扫描
     if not videos:
         video_files = sorted(config.VIDEOS_DIR.rglob("*.mp4"))
         if not video_files:
@@ -139,46 +129,33 @@ def step_playlist():
         print("  [提示] 没有找到音频文件，请先运行 --step extract")
         return
 
-    # COS 配置
-    cos_base = "https://audio-1256405210.cos.ap-shanghai.myqcloud.com/jiugeyinxue/"
+    cos_base = config.COS_BASE_URL
 
-    # 读取现有 playlist 保留 app/settings 部分
     playlist_path = Path(__file__).parent.parent.parent / "src" / "static" / "data" / "playlist.json"
     if playlist_path.exists():
         existing = json.loads(playlist_path.read_text(encoding="utf-8"))
     else:
         existing = {"app": {}, "settings": {}, "items": []}
 
-    # 解析音频文件名，提取标题和日期
     items = []
     for i, mp3_path in enumerate(audio_files, 1):
-        name = mp3_path.stem  # 不含扩展名
-
-        # 文件名格式: 2024-05-11 21-46-58_道德经解读与实际运用_#天涯神贴_#认知_#道德经_video
-        # 提取日期
+        name = mp3_path.stem
         date_str = ""
         title = name
         if name[:4].isdigit() and len(name) > 19:
-            date_str = name[:10]  # 2024-05-11
-            # 去掉 "2024-05-11 21-46-58_" 前缀 (前19字符)
+            date_str = name[:10]
             title_part = name[19:]
-            # 去掉 _video 后缀
             title_part = title_part.replace("_video", "")
-            # 去掉 # 标签部分: 取第一个 _# 之前的内容
             if "_#" in title_part:
                 title = title_part.split("_#")[0].strip()
             elif "#" in title_part:
                 title = title_part.split("#")[0].strip()
             else:
                 title = title_part.strip()
-            # 去掉首尾的下划线
             title = title.strip("_").strip()
 
-        # URL 编码文件名
         url_filename = urllib.parse.quote(name + ".mp3")
-        audio_url = cos_base + url_filename
-
-        # 获取时长 (用 ffprobe)
+        audio_url = cos_base + "/" + url_filename
         duration = _get_duration(mp3_path)
 
         item = {
@@ -195,39 +172,25 @@ def step_playlist():
         items.append(item)
         print(f"  [{i:03d}] {title} ({duration}s)")
 
-    # 合并: 保留原有 app/settings，替换 items
     existing["items"] = items
-
-    # 写入 playlist.json
     playlist_path.parent.mkdir(parents=True, exist_ok=True)
-    playlist_path.write_text(
-        json.dumps(existing, ensure_ascii=False, indent=2),
-        encoding="utf-8"
-    )
+    playlist_path.write_text(json.dumps(existing, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"\n  已生成: {playlist_path}")
     print(f"  共 {len(items)} 条音频")
 
 
 def _get_duration(mp3_path: Path) -> int:
-    """用 ffmpeg 获取音频时长（秒）"""
-    import subprocess as sp
+    """获取音频时长（秒）"""
     import re
 
-    # 查找 ffmpeg 路径
     ffmpeg_bin = "ffmpeg"
-    result = sp.run(["which", "ffmpeg"], capture_output=True, text=True)
+    result = subprocess.run(["which", "ffmpeg"], capture_output=True, text=True)
     if result.returncode != 0 or not result.stdout.strip():
         ffmpeg_bin = "/Volumes/cc/dev/ffmpeg/ffmpeg"
 
     try:
-        result = sp.run(
-            [ffmpeg_bin, "-i", str(mp3_path)],
-            capture_output=True, text=True, timeout=30
-        )
-        # ffmpeg 把信息输出到 stderr
-        output = result.stderr
-        # 匹配 "Duration: 00:14:25.10"
-        match = re.search(r"Duration:\s+(\d+):(\d+):(\d+(?:\.\d+)?)", output)
+        result = subprocess.run([ffmpeg_bin, "-i", str(mp3_path)], capture_output=True, text=True, timeout=30)
+        match = re.search(r"Duration:\s+(\d+):(\d+):(\d+(?:\.\d+)?)", result.stderr)
         if match:
             h, m, s = match.groups()
             return int(int(h) * 3600 + int(m) * 60 + float(s))
@@ -240,7 +203,6 @@ def step_transcribe(audio_files: list = None) -> list:
     """第三步: 生成字幕"""
     from transcriber import SubtitleTranscriber
 
-    # 如果没有传入音频列表，从目录中扫描
     if not audio_files:
         audio_files = sorted(config.AUDIO_DIR.glob("*.mp3"))
         if not audio_files:
@@ -265,13 +227,81 @@ def step_transcribe(audio_files: list = None) -> list:
     return srt_files
 
 
+def step_article():
+    """第四步: 从 SRT 字幕生成文章"""
+    from article_writer import batch_generate, ArticleWriter
+
+    print("\n" + "=" * 60)
+    print("  第四步: 生成文章 (Whisper → 百炼 qwen-turbo)")
+    print("=" * 60)
+
+    srt_files = sorted(config.SUBTITLES_DIR.glob("*.srt"))
+    if not srt_files:
+        print("  [提示] 没有找到字幕文件，请先运行 --step transcribe")
+        return
+
+    # 过滤：跳过已生成文章的 SRT
+    pending = []
+    for srt in srt_files:
+        article_json = config.ARTICLES_DIR / (srt.stem + ".article.json")
+        if not article_json.exists():
+            pending.append(srt)
+
+    if not pending:
+        print("  [提示] 所有 SRT 都已生成文章，无需处理")
+        return
+
+    print(f"  待处理: {len(pending)} 个")
+    articles = batch_generate(pending, config.ARTICLES_DIR)
+
+    print(f"\n  完成: 共生成 {len(articles)} 篇文章")
+
+
+def step_publish():
+    """第五步: 发布文章到 COS + 更新前端 JSON"""
+    from uploader import publish
+
+    print("\n" + "=" * 60)
+    print("  第五步: 发布到 COS + 更新 JSON")
+    print("=" * 60)
+
+    article_files = sorted(config.ARTICLES_DIR.glob("*.article.json"))
+    if not article_files:
+        print("  [提示] 没有找到文章元数据文件，请先运行 --step article")
+        return
+
+    success_count = 0
+    for article_file in article_files:
+        # 查找对应的 MP3
+        # article.json 文件名: "2026-07-11 21-43-00_xxx_video.article.json"
+        # MP3 文件名:      "2026-07-11 21-43-00_xxx_video.mp3"
+        mp3_name = article_file.stem.replace(".article", "") + ".mp3"
+        mp3_path = config.AUDIO_DIR / mp3_name
+
+        if not mp3_path.exists():
+            print(f"\n  [跳过] 找不到对应 MP3: {mp3_name}")
+            continue
+
+        print(f"\n  [{success_count + 1}/{len(article_files)}] 发布: {article_file.name}")
+        if publish(str(article_file), str(mp3_path)):
+            success_count += 1
+
+    print(f"\n  完成: 成功发布 {success_count} 篇")
+
+
+def step_panel():
+    """启动管理面板"""
+    from panel.server import main
+    main()
+
+
 def main():
     parser = argparse.ArgumentParser(
-        description="抖音视频转播客音频 + 字幕"
+        description="抖音视频 → 播客 → 文章 全自动 Pipeline"
     )
     parser.add_argument(
         "--step",
-        choices=["scrape", "extract", "boost", "transcribe", "playlist", "all"],
+        choices=["scrape", "extract", "boost", "transcribe", "article", "publish", "playlist", "panel", "all"],
         default="all",
         help="执行哪个步骤 (默认 all = 全部执行)"
     )
@@ -283,7 +313,10 @@ def main():
     )
     args = parser.parse_args()
 
-    # 命令行参数覆盖配置
+    if args.step == "panel":
+        step_panel()
+        return
+
     if args.max is not None:
         config.MAX_VIDEOS = args.max
 
@@ -307,13 +340,18 @@ def main():
     if args.step in ("transcribe", "all"):
         step_transcribe(audio_files)
 
+    if args.step in ("article", "all"):
+        step_article()
+
     if args.step == "playlist":
         step_playlist()
+
+    if args.step in ("publish", "all"):
+        step_publish()
 
     elapsed = time.time() - start_time
     print("\n" + "=" * 60)
     print(f"  全部完成! 总耗时: {int(elapsed // 60)}分{int(elapsed % 60)}秒")
-    print(f"  输出目录: {config.OUTPUT_DIR}")
     print("=" * 60)
 
 
