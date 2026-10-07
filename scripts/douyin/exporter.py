@@ -1,9 +1,10 @@
 """
 导出与发布
 
-publish_one：把音频 + 文章正文推到 COS，作品阶段变 published
-音频扩展名跟 config.AUDIO_PROFILE 走（默认 .m4a），COS 键名与 ContentType 同步
+publish_one：一集的音频 + 正文推到 uniCloud 云存储（实现见 cloud_release）
+音频扩展名跟 config.AUDIO_PROFILE 走（默认 .m4a），云路径与 ContentType 同步
 export_all：sqlite → src/static/data/{articles.json, playlist.json, columns.json}
+           这三个文件现在只是「云接口不可用时的兜底种子」，不再是线上真源
 
 导出按 id upsert，绝不无脑 append（旧 uploader 每跑一次就多塞一条重复记录，
 这是必修的坑）。前端手工加的老条目原样保留。
@@ -12,7 +13,6 @@ from __future__ import annotations
 
 import json
 import sys
-import urllib.parse
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -24,11 +24,6 @@ import pipeline_db as db
 
 _APP = {"name": "九哥隐学", "author": "九哥", "cover": "",
         "description": "九哥原创文章阅读"}
-
-
-def _cos_url(key: str) -> str:
-    return (f"https://{config.COS_BUCKET}.cos.{config.COS_REGION}"
-            f".myqcloud.com/" + urllib.parse.quote(key))
 
 
 def _date(create_time: int) -> str:
@@ -53,6 +48,7 @@ def _rows(conn, only_published: bool = True) -> list[dict]:
     sql = """
       SELECT v.*, c.name AS column_name, c.slug AS column_slug,
              c.source AS column_kind2, c.episode_total AS col_total, c.sort AS col_sort,
+             c.cover_url_cloud AS column_cover,
              a.slug AS account_slug, a.name AS account_name, a.style AS account_style
       FROM videos v
       LEFT JOIN columns c ON c.column_id = v.column_id
@@ -79,12 +75,14 @@ def _article_item(r: dict, article_url: str, audio_url: str) -> dict:
         "title": meta.get("title") or r["title"],
         "summary": lead[:120],
         "category": _category(r.get("account_style") or ""),
-        "cover": r.get("cover_url") or "",
+        "cover": r.get("column_cover") or r.get("cover_url") or "",
         "publishedAt": _date(r.get("create_time") or 0),
         "articleUrl": article_url,
         "audioUrl": audio_url,
+        # sort 取负时间戳：读接口与前端都按 sort 升序，等价于全站最新在前。
+        # 栏目内的集序另有 columns.episodeIds 显式决定，不看这个值。
         "enabled": True,
-        "sort": int(r.get("episode_no") or 0),
+        "sort": -int(r.get("create_time") or 0),
         "accountId": r.get("account_slug") or "",
         "accountName": r.get("account_name") or "",
         "columnId": r.get("column_slug") or "",
@@ -97,60 +95,22 @@ def _article_item(r: dict, article_url: str, audio_url: str) -> dict:
     }
 
 
-# ---------- 发布到 COS ----------
+# ---------- 发布到 uniCloud ----------
 
-def publish_one(conn, aweme_id: str, verbose: bool = True) -> dict:
-    """上传音频 + 正文，成功后阶段置 published"""
-    from uploader import CosUploader
+def publish_one(conn, aweme_id: str, verbose: bool = True,
+                force: bool = False) -> dict:
+    """把一集的音频 + 正文推到云存储，成功后阶段置 published"""
+    import cloud_release
 
-    v = db.get_video(conn, aweme_id)
-    if not v:
-        raise ValueError(f"数据库里没有这条作品: {aweme_id}")
-    if not v.get("article_path") or not Path(v["article_path"]).exists():
-        raise RuntimeError("还没有生成文章，先跑 article 步骤")
-    audio = Path(v.get("audio_path") or "")
-    if not audio.exists():
-        audio = media.audio_path_any(aweme_id)
-    if not audio.exists():
-        raise RuntimeError(f"音频文件不存在: {audio}")
-
-    _acc = conn.execute("SELECT slug, name FROM accounts WHERE sec_user_id=?",
-                        (v["sec_user_id"],)).fetchone()
-    col_slug = "single"
-    if v.get("column_id"):
-        row = conn.execute("SELECT slug FROM columns WHERE column_id=?",
-                           (v["column_id"],)).fetchone()
-        col_slug = (row["slug"] if row else "single")
-    account_slug = (_acc["slug"] if _acc else "") or "unknown"
-    ep = int(v.get("episode_no") or 0)
-    stem = f"ep{ep}_{aweme_id}" if ep else aweme_id
-
-    audio_key = (f"{config.COS_AUDIO_PREFIX}/{account_slug}/{col_slug}"
-                 f"/{stem}{audio.suffix}")
-    text_key = f"{config.COS_TXT_PREFIX}/{account_slug}/{col_slug}/{stem}.txt"
-
-    up = CosUploader()
-    if not up.upload_file(audio, audio_key, content_type=media.media_type(audio)):
-        raise RuntimeError("音频上传 COS 失败")
-    tmp_txt = config.OUTPUT_DIR / "tmp" / f"{stem}.txt"
-    tmp_txt.parent.mkdir(parents=True, exist_ok=True)
-    # 早于排版收口生成的存量文章，上传前统一再过一遍，避免带着弯引号上线
-    from article_formatter import tidy_text
-    tmp_txt.write_text(
-        tidy_text(Path(v["article_path"]).read_text(encoding="utf-8")) + "\n",
-        encoding="utf-8")
-    try:
-        if not up.upload_file(tmp_txt, text_key):
-            raise RuntimeError("正文上传 COS 失败")
-    finally:
-        tmp_txt.unlink(missing_ok=True)
-
-    urls = {"audio_url": _cos_url(audio_key), "article_url": _cos_url(text_key)}
-    db.set_stage(conn, aweme_id, "published", **urls)
-    db.log_event(conn, "info", "publish", aweme_id, urls["audio_url"][:120])
-    if verbose:
-        print(f"  [发布] {aweme_id} → {audio_key}")
-    return urls
+    res = cloud_release.publish_files(conn, aweme_id, force=force)
+    if verbose and not res.get("skipped"):
+        print(f"  [发布] {aweme_id} → {res['audioUrl'][:96]}")
+    if verbose and res.get("warning"):
+        print(f"  [注意] {res['warning']}")
+    return {"audio_url": res["audioUrl"], "article_url": res["articleUrl"],
+            "audio_file_id": res.get("audioFileId", ""),
+            "article_file_id": res.get("articleFileId", ""),
+            "skipped": bool(res.get("skipped"))}
 
 
 # ---------- 导出前端数据 ----------
@@ -185,9 +145,9 @@ def export_all(conn=None, only_published: bool = True,
         audio_url = r.get("audio_url") or ""
         if not article_url or not audio_url:
             if only_published:
-                # 只导已发布的：没 COS 直链的条目不进前端数据，避免线上 404
+                # 只导已发布的：没有云存储直链的条目不进前端数据，避免线上 404
                 continue
-            # 本地预览没上传 COS，就用面板的 /media 路由当直链，
+            # 本地预览还没上云，就用面板的 /media 路由当直链，
             # 前端起个 H5 服务即可试听试读（同一局域网内把 base 换成面板机 IP）
             aid = r["aweme_id"]
             if not audio_url:
@@ -265,7 +225,7 @@ def _upsert(doc: dict, items: list[dict]) -> int:
 if __name__ == "__main__":
     import argparse
     ap = argparse.ArgumentParser(description="导出前端数据 / 发布单集")
-    ap.add_argument("--publish", help="发布指定 aweme_id 到 COS")
+    ap.add_argument("--publish", help="发布指定 aweme_id 到 uniCloud")
     ap.add_argument("--export", action="store_true", help="导出 json")
     ap.add_argument("--all-stages", action="store_true",
                     help="连未发布的也导出（本地预览用）")

@@ -84,6 +84,11 @@ header{
 .card .body{padding:11px}
 .card .body.flush{padding:0}
 .hint{color:var(--ink3);font-size:11.5px;margin:6px 0 0}
+details.hint{margin:8px 0 0;padding:8px 10px;border:1px dashed var(--line);border-radius:6px;background:var(--bg)}
+details.hint summary{cursor:pointer;color:var(--ink2);font-size:11.5px}
+details.hint[open] summary{margin-bottom:6px}
+ol.deploy-steps{margin:0 0 6px;padding-left:20px;font-size:11.5px;color:var(--ink2);line-height:1.9}
+ol.deploy-steps code{font-size:11px}
 
 /* ---------- 表单 ---------- */
 .field{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
@@ -322,7 +327,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink2);whit
       </button>
       <button data-view="output">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
-        发布 / 导出
+        云端发布
       </button>
       <button data-view="audio">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14v-4M7 18V6M11 15V9M15 21V3M19 16v-8"/></svg>
@@ -413,30 +418,99 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink2);whit
       </div>
     </section>
 
-    <!-- 发布/导出 -->
+    <!-- 云端发布 -->
     <section class="view" id="view-output">
       <div class="card">
         <h2>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>
-          发布到 COS 与导出前端数据
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 .4-9A6 6 0 0 0 6.2 8.6 4.5 4.5 0 0 0 6.5 19Z"/><path d="M12 12v6"/><path d="m9.5 14.5 2.5-2.5 2.5 2.5"/></svg>
+          云端连接与配置
         </h2>
         <div class="body">
-          <div class="light" id="cosLight"><i class="lamp"></i><div class="txt"><div class="t1">检测中…</div><div class="t2"></div></div></div>
+          <div class="light" id="cloudLight"><i class="lamp"></i><div class="txt"><div class="t1">检测中…</div><div class="t2"></div></div></div>
+          <div class="grid2">
+            <div class="field"><label>云函数 URL 化地址（POST 入口）</label><input type="text" id="cfBase" placeholder="https://env-xxx.dev-hz.cloudbasefunction.cn" spellcheck="false"></div>
+            <div class="field"><label>云存储下载域名（永久直链）</label><input type="text" id="cfHost" placeholder="https://env-xxx.normal.cloudstatic.cn" spellcheck="false"></div>
+            <div class="field"><label>云存储目录前缀</label><input type="text" id="cfPrefix" placeholder="jiugeyinxue" spellcheck="false"></div>
+            <div class="field"><label>管理令牌 ADMIN_TOKEN（留空则不修改）</label><input type="text" id="cfToken" placeholder="已配置就不必再填" spellcheck="false"></div>
+          </div>
+          <div class="row">
+            <button class="btn primary" id="btnCloudSave">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+              保存配置
+            </button>
+            <button class="btn" id="btnCloudTest">测试连接</button>
+            <button class="btn" id="btnCloudInit">初始化集合</button>
+            <button class="btn" id="btnCloudStatus">比对线上</button>
+          </div>
+          <table id="cloudProbe"></table>
+          <details class="hint" open>
+            <summary><b>首次上线四步</b>（函数和路径都带 <code>jy-</code> 前缀：这个服务空间和另一个项目共用，<code>/upload</code> 已被占）</summary>
+            <ol class="deploy-steps">
+              <li>自检：<code>.venv/bin/python run.py cloud check</code>（语法 / 令牌 / 哪个函数版本落后）</li>
+              <li>HBuilderX 里右键 <code>cloudfunctions/function-jy-content</code>、<code>function-jy-upload</code> 这两个<b>目录</b> →「上传部署」，别去找 zip</li>
+              <li>给两个函数开 URL 化，分别绑 <code>/jy-content</code>、<code>/jy-upload</code>，请求方式都要允许 <b>POST</b></li>
+              <li>云存储把 <code>jiugeyinxue/</code> 目录设为<b>公共读</b>，再点下面的「测试连接」</li>
+            </ol>
+            <p class="hint">小程序后台还要加合法域名：request 加 <code>dev-hz.cloudbasefunction.cn</code>，request + downloadFile 都加 <code>normal.cloudstatic.cn</code>。</p>
+          </details>
+          <p class="hint">四个地址在 uniCloud 控制台「支付宝云 · 服务空间」里能查到：<code>dev-hz</code> 是云函数 URL 化域名，<code>normal.cloudstatic.cn</code> 是内置云存储下载域名，永久直链靠它，所以必须把 <code>jiugeyinxue/</code> 目录设为<b>公共读</b>，否则只能拿到几小时的临时签名地址。</p>
+          <p class="hint">令牌走 <code>x-admin-token</code> 头，本地存 <code>scripts/douyin/unicloud.key</code>（已 gitignore），云端存在云函数环境变量 <code>ADMIN_TOKEN</code> 或 <code>secret.js</code>，两边必须一致。</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/></svg>
+          发布到云端
+        </h2>
+        <div class="body">
           <div class="row">
             <select id="pubAcct"></select>
             <select id="pubCol"></select>
+            <input type="number" id="pubLimit" min="0" step="1" value="0" title="0 = 不限" style="width:88px">
             <button class="btn primary" id="btnPublish">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>
               发布该范围已成文条目
             </button>
+            <button class="btn" id="btnPublishAll">发布全部待发布</button>
+            <button class="btn" id="btnCloudTexts" title="只重传已上线条目的正文 txt，音频一个字节都不碰：改了排版规则之后用它刷新线上">只重推正文</button>
+            <button class="btn" id="btnMetaSync">只同步元数据</button>
+            <button class="btn" id="btnCloudCovers">合集封面转存</button>
+          </div>
+          <div class="row">
+            <label class="check" title="已推过的条目也重新上传一遍"><input type="checkbox" id="pubForce">强制重传</label>
+            <label class="check" title="只算清单不上传，不动数据库"><input type="checkbox" id="pubDry">试跑（不上传）</label>
+            <label class="check" title="封面转存专用：已转过的也重抓重传一遍" style="margin-left:14px"><input type="checkbox" id="coverForce">封面强制重转</label>
+            <label class="check" title="封面转存专用：只列清单不上传"><input type="checkbox" id="coverDry">封面试跑</label>
+            <input type="text" id="pubNote" placeholder="版本号备注，例如「补录史记 12 集」" style="flex:1;min-width:180px">
+          </div>
+          <p class="hint">数量上限给 0 表示不限。发布 = 音频 m4a + 正文 txt 传云存储 → 取回永久直链写回本地库 → 账号/栏目/分集元数据推云数据库 → 线上 <code>dataVersion</code> +1（小程序按它决定要不要重新拉数据）。单请求上限 28MB，超长音频会自动改走分片直传。</p>
+          <p class="hint">「只重推正文」是给改排版用的：只动已上线的条目，正文几 KB 一篇，音频一个字节都不碰。重推后地址带新的内容指纹（<code>?v=</code>），CDN 那份旧缓存自然作废，不用去控制台刷预热。勾「试跑」只看清单。</p>
+          <p class="hint">封面是一个合集一张：取合集的第一张图（合集自己没封面就退到集序最靠前那一集的封面），抓下来存成 <code>jiugeyinxue/{账号}/{合集}/cover.jpg</code>，线上只落云存储永久直链，不再依赖抖音那条带签名的链接。发布流程会自动带上这一步，单独改了合集归属或想换封面时才需要手动点。</p>
+          <p class="hint">下架/撤回针对「作品队列」里勾选的条目：下架只在云端置 <code>enabled=false</code>，勾选「连文件一起删」才会真的删云存储。</p>
+          <div class="row">
+            <button class="btn sm" id="btnOffline">下架所勾选条目</button>
+            <label class="check" title="默认保留文件，只改状态"><input type="checkbox" id="purgeFiles">连文件一起删</label>
+            <button class="btn sm" id="btnRetract">撤回本地（清云端地址）</button>
+            <span class="hint" id="selHint" style="margin:auto 0 0 0">未勾选条目</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>
+          离线兜底：导出前端 json
+        </h2>
+        <div class="body">
+          <div class="row">
             <button class="btn" id="btnExport">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>
-              导出前端 json
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+              导出已发布
             </button>
             <button class="btn" id="btnExportDraft">导出（含未发布，本地预览）</button>
           </div>
-          <p class="hint">发布 = 上传 mp3 与正文 txt 到腾讯云 COS 并把条目置为 published，随后自动重建 articles.json / playlist.json / columns.json。导出只写前端数据文件，不动 COS。</p>
-          <p class="hint">COS 密钥用环境变量 <code>COS_SECRET_ID</code> / <code>COS_SECRET_KEY</code>，没配也能先跑采集与成文，发布按钮会提示原因。</p>
+          <p class="hint">正常上线不需要这一步。它只把 <code>articles.json / playlist.json / columns.json</code> 写到 <code>src/static/data/</code>，留着当云接口不可用时的初始种子数据；线上数据一律以云数据库为准，不再手工替换 json。</p>
         </div>
       </div>
     </section>

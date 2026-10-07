@@ -1,0 +1,38 @@
+[
+  {
+    "IndexName": "sort_name",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "sort",
+          "Direction": "1",
+          "Type": "long"
+        },
+        {
+          "Name": "name",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  },
+  {
+    "IndexName": "account_sort",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "accountId",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "sort",
+          "Direction": "1",
+          "Type": "long"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

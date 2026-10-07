@@ -83,7 +83,7 @@ function renderState(ov) {
     txt = `处理 ${run.done}/${run.total} · ${STAGE_CN[run.step] || run.step || ''} ${run.current ? run.current.slice(-6) : ''}`;
   } else if (busyJob) {
     box.classList.add('busy');
-    txt = `${busyJob.kind} 进行中 ${busyJob.elapsed}s`;
+    txt = `${KIND_CN[busyJob.kind] || busyJob.kind} 进行中 ${busyJob.elapsed}s`;
   }
   const err = (ov.jobs || []).find((j) => j.status === 'error' && Date.now() - (j.ts || 0) < 60000);
   if (!run.running && !busyJob && ov.lastError) { box.classList.add('err'); txt = '有任务失败'; }
@@ -119,9 +119,6 @@ function renderCookie(ov) {
   box.className = `light ${cls}`;
   box.innerHTML = `<i class="lamp"></i><div class="txt"><div class="t1">${esc(t1)}</div><div class="t2">${esc(t2)}</div></div>`;
   $('#engineTag').textContent = `引擎 ${ov.engine || ''}`;
-  const cos = $('#cosLight');
-  if (ov.cos) cos.className = 'light ok', cos.innerHTML = '<i class="lamp"></i><div class="txt"><div class="t1">COS 密钥已配置</div><div class="t2">可以发布</div></div>';
-  else cos.className = 'light warn', cos.innerHTML = '<i class="lamp"></i><div class="txt"><div class="t1">未配置 COS 密钥</div><div class="t2">export COS_SECRET_ID=xxx; export COS_SECRET_KEY=xxx 后再发布；采集与成文不受影响</div></div>';
 }
 
 /* ---------- 账号 ---------- */
@@ -250,6 +247,8 @@ function renderQueue() {
 
 function updateSelInfo() {
   $('#selInfo').textContent = S.selected.size ? `已选 ${S.selected.size} 条` : '';
+  const sh = $('#selHint');
+  if (sh) sh.textContent = S.selected.size ? `已勾选 ${S.selected.size} 条` : '未勾选条目（去「作品队列」勾选）';
   const boxes = $$('#qBody input[type=checkbox]');
   $('#ckAll').checked = boxes.length > 0 && boxes.every((b) => b.checked);
 }
@@ -265,6 +264,13 @@ async function loadQueue() {
 }
 
 /* ---------- 任务 ---------- */
+const KIND_CN = {
+  scan: '采集', process: '处理', compact: '音频瘦身', columns: 'AI 分栏目',
+  probe: '账号试探', check: '登录体检', login: '扫码登录',
+  'cloud-publish': '云端发布', 'cloud-sync': '元数据同步',
+  'cloud-cover': '封面转存', publish: '云端发布',
+};
+
 function renderJobs() {
   const box = $('#jobList');
   if (!S.jobs.length) { box.innerHTML = '<div class="empty" style="padding:18px">暂无任务</div>'; return; }
@@ -272,7 +278,7 @@ function renderJobs() {
   S.jobs.slice(0, 8).forEach((j) => {
     const line = el('div', `job ${j.status}`);
     const msg = j.status === 'error' ? j.error : (j.note || (j.result ? JSON.stringify(j.result).slice(0, 160) : ''));
-    line.innerHTML = `<span class="k">${esc(j.kind)}</span><span class="m">${esc(msg || j.status)}</span><span class="t">${j.elapsed}s</span>`;
+    line.innerHTML = `<span class="k">${esc(KIND_CN[j.kind] || j.kind)}</span><span class="m">${esc(msg || j.status)}</span><span class="t">${j.elapsed}s</span>`;
     box.appendChild(line);
   });
 }
@@ -424,6 +430,7 @@ function showView(v) {
   if (v === 'columns') renderColumns();
   if (v === 'queue') loadQueue().catch((e) => toast(e.message, 'err'));
   if (v === 'log') loadLog().catch(() => {});
+  if (v === 'output') refresh(false).catch(() => {});
 }
 
 async function loadLog() {
@@ -495,12 +502,126 @@ function renderAudio(ov) {
     }).join('');
 }
 
+/* ---------- 云端发布 ---------- */
+const _cfill = (sel, v) => {
+  const n = $(sel);
+  if (n && document.activeElement !== n) n.value = v == null ? '' : v;
+};
+
+const _crow = (k, v, cls) =>
+  `<tr><td class="t" style="color:var(--ink3);width:132px">${k}</td><td class="t" style="${cls || ''}">${v}</td></tr>`;
+
+function renderCloud(ov) {
+  const c = (ov && ov.cloud) || {};
+  S.cloud = c;
+  const light = $('#cloudLight');
+  let cls = 'err', t1 = '云端未配置', t2 = '填上云函数地址和管理令牌，再点「测试连接」';
+  if (c.base_url && c.token_configured) {
+    const covMiss = (c.coverTotal || 0) - (c.covers || 0);
+    cls = (c.pending > 0 || covMiss > 0) ? 'warn' : 'ok';
+    t1 = c.pending > 0 ? `配置就绪，还有 ${c.pending} 集成文待推`
+      : covMiss > 0 ? `配置就绪，还有 ${covMiss} 个合集封面没转存`
+      : '配置就绪，本地没有待推条目';
+    t2 = `空间 ${c.space_id || '-'} · 前缀 ${c.prefix || '-'} · 已推 ${c.pushed} 集`
+      + ` · 封面 ${c.covers || 0}/${c.coverTotal || 0}`;
+  } else if (c.base_url) {
+    cls = 'warn';
+    t1 = '接口地址已填，缺管理令牌';
+    t2 = '粘贴 ADMIN_TOKEN，或把它写到 ' + (c.token_file || 'unicloud.key');
+  }
+  if (S.cloudProbe && S.cloudProbe.kind === 'test') {
+    if (S.cloudProbe.ok) { cls = 'ok'; t1 = '云函数联通正常'; t2 = S.cloudProbe.summary || t2; }
+    else { cls = 'err'; t1 = '云函数不通'; t2 = S.cloudProbe.summary || '看下面明细'; }
+  }
+  light.className = `light ${cls}`;
+  light.querySelector('.t1').textContent = t1;
+  light.querySelector('.t2').textContent = t2;
+
+  _cfill('#cfBase', c.base_url);
+  _cfill('#cfHost', c.storage_host);
+  _cfill('#cfPrefix', c.prefix);
+  const tk = $('#cfToken');
+  if (document.activeElement !== tk) tk.value = '';
+  tk.placeholder = c.token_configured ? '已配置，留空保持不变' : '粘贴 ADMIN_TOKEN';
+  $('#selHint').textContent = S.selected.size ? `已勾选 ${S.selected.size} 条` : '未勾选条目（去「作品队列」勾选）';
+  renderProbe();
+}
+
+function renderProbe() {
+  const box = $('#cloudProbe');
+  const d = S.cloudProbe;
+  if (!d) { box.innerHTML = ''; return; }
+  if (d.kind === 'err') {
+    box.innerHTML = `<tr><td class="t" style="color:var(--err)">${esc(d.msg)}</td></tr>`;
+    return;
+  }
+  if (d.kind === 'test') {
+    const line = (nm, r) => {
+      const bad = !r || r.error;
+      return `<tr><td class="t" style="width:180px">${nm}</td>` +
+        `<td class="num" style="width:52px;color:var(--${bad ? 'err' : 'ok'})">${bad ? '失败' : '通'}</td>` +
+        `<td class="t" style="color:var(--ink3)">${esc(bad ? (r ? r.error : '无响应') : JSON.stringify(r).slice(0, 140))}</td></tr>`;
+    };
+    const h = d.health || {};
+    const step = (x) => `<tr><td class="t" style="width:180px">读链路 · ${esc(x.action)}</td>` +
+      `<td class="num" style="width:52px;color:var(--${x.ok ? 'ok' : 'err'})">${x.ok ? '通' : '失败'}</td>` +
+      `<td class="t" style="color:var(--ink3)">${esc(x.ok ? (x.detail || '') : (x.error || ''))}</td></tr>`;
+    box.innerHTML = '<tr><th>云函数</th><th style="width:52px">状态</th><th>返回</th></tr>' +
+      line('function-jy-content', d.content) + line('function-jy-upload', d.upload) +
+      (h.steps || []).map(step).join('') +
+      (h.hint ? `<tr><td class="t" colspan="3" style="color:var(--warn)">${esc(h.hint)}</td></tr>` : '');
+    return;
+  }
+  if (d.kind === 'init') {
+    const r = d.res || {};
+    const col = r.collections || {};
+    box.innerHTML = '<tr><th>初始化</th><th>结果</th></tr>' +
+      _crow('新建集合', esc((col.created || []).join('、') || '无（都已存在）')) +
+      _crow('已存在', esc((col.skipped || []).join('、'))) +
+      _crow('meta 文档', `site · dataVersion=${(r.meta || {}).dataVersion}`);
+    return;
+  }
+  if (d.kind === 'status') {
+    const R = (d.res || {}).remote || {};
+    const L = (d.res || {}).local || {};
+    const RC = R.counts || {};
+    const row = (k, rv, lv) => {
+      const gap = Number(rv) - Number(lv || 0);
+      const color = gap === 0 ? 'var(--ok)' : gap > 0 ? 'var(--warn)' : 'var(--err)';
+      return `<tr><td class="t">${k}</td><td class="num">${rv}</td><td class="num">${lv == null ? '-' : lv}</td>` +
+        `<td class="num" style="color:${color}">${gap === 0 ? '一致' : (gap > 0 ? '线上多 ' + gap : '线上少 ' + (-gap))}</td></tr>`;
+    };
+    const recent = (R.recent || []).slice(0, 3).map((x) =>
+      `v${x.dataVersion} · ${new Date(x.releasedAt).toLocaleString()} · ${esc(x.note || '')}`).join('<br>') || '—';
+    box.innerHTML = '<tr><th>项目</th><th style="width:72px">线上</th><th style="width:72px">本地</th><th style="width:96px">差</th></tr>' +
+      row('分集', RC.episodes, L.pushed) + row('栏目', RC.columns, L.articles) +
+      row('账号', RC.accounts, L.accounts) + row('发布记录', RC.releases, null) +
+      `<tr><td class="t">dataVersion</td><td class="num">${R.dataVersion}</td><td class="num" colspan="2" style="color:var(--ink3)">${esc(recent)}</td></tr>` +
+      `<tr><td class="t">待推 / 待同步</td><td class="num" colspan="3">${L.pending || 0} 集成文未推，${(d.res || {}).diff ? Math.max(0, -(d.res.diff.episodes || 0)) : 0} 集本地已推但线上没有</td></tr>`;
+    return;
+  }
+  if (d.kind === 'result') {
+    box.innerHTML = `<tr><td class="t" style="color:var(--ink3)">${esc(d.label)}</td><td class="t">${esc(JSON.stringify(d.res).slice(0, 400))}</td></tr>`;
+  }
+}
+
+function cloudBody() {
+  return {
+    all: true,
+    limit: Number($('#pubLimit').value || 0),
+    force: $('#pubForce').checked,
+    dry_run: $('#pubDry').checked,
+    note: $('#pubNote').value.trim(),
+  };
+}
+
 /* ---------- 轮询 ---------- */
 async function refresh(full = true) {
   const ov = await api('/api/overview');
   S.accounts = ov.accounts; S.columns = ov.columns; S.jobs = ov.jobs; S.overview = ov;
   renderChips(ov.stats); renderState(ov); renderCookie(ov); renderAccounts(); renderJobs();
   if (S.view === 'audio') renderAudio(ov);
+  if (S.view === 'output') renderCloud(ov);
   if (full && S.view === 'queue') loadQueue();
   if (full && S.view === 'columns') renderColumns();
   const running = (ov.jobs || []).some((j) => j.status === 'running') || (ov.process || {}).running;
@@ -597,8 +718,8 @@ $('#dPlay').onclick = () => {
   au.play();
 };
 $('#dPub').onclick = () => guard(async () => {
-  await api('/api/publish', { method: 'POST', body: { ids: [S.detail.aweme_id] } });
-  toast('已提交发布任务', 'ok'); refresh();
+  const r = await api('/api/cloud/publish', { method: 'POST', body: { ids: [S.detail.aweme_id], note: '单集发布' } });
+  toast(`已提交云端发布（集 ${r.job_id.slice(-6)}）：传文件 → 写库 → 版本 +1`, 'ok'); refresh();
 });
 $('#btnBuild').onclick = () => guard(async () => {
   const sec = $('#cbAcct').value;
@@ -614,13 +735,130 @@ $('#btnColNew').onclick = () => guard(async () => {
   await api('/api/columns', { method: 'POST', body: { sec_user_id: sec, name } });
   toast('已创建（锁定状态，AI 不会覆盖）', 'ok'); refresh();
 });
-$('#btnPublish').onclick = () => guard(async () => {
-  await api('/api/publish', { method: 'POST', body: { sec_user_id: $('#pubAcct').value, column_id: $('#pubCol').value } });
-  toast('已提交发布任务', 'ok'); refresh();
+/* 云端：配置 */
+$('#btnCloudSave').onclick = () => guard(async () => {
+  const r = await api('/api/cloud/config', {
+    method: 'POST',
+    body: {
+      base_url: $('#cfBase').value.trim(), storage_host: $('#cfHost').value.trim(),
+      prefix: $('#cfPrefix').value.trim(), token: $('#cfToken').value.trim(),
+    },
+  });
+  S.cloud = r; S.cloudProbe = null; renderCloud({ cloud: r });
+  toast('云端配置已保存，无需重启即刻生效', 'ok');
 });
+
+$('#btnCloudTest').onclick = () => guard(async () => {
+  const b = $('#btnCloudTest'); b.disabled = true;
+  try {
+    const r = await api('/api/cloud/test', { method: 'POST' });
+    const bad = [r.content, r.upload].filter((x) => !x || x.error);
+    const h = r.health || {};
+    const badSteps = (h.steps || []).filter((x) => !x.ok);
+    let summary;
+    if (bad.length) {
+      summary = `${bad.length} 个云函数不可用：未部署 / 未开 URL 化 / 令牌不符`;
+    } else if (!h.ok) {
+      summary = `云函数通，但线上读链路 ${badSteps.length} 处失败：`
+        + badSteps.map((x) => x.action).join('、');
+    } else {
+      summary = `content / upload 都通，线上读链路 ${(h.steps || []).length} 步全通过`;
+    }
+    S.cloudProbe = { kind: 'test', content: r.content, upload: r.upload, health: h,
+      ok: bad.length === 0 && h.ok !== false, summary };
+    refresh(false).catch(() => {});
+    toast(S.cloudProbe.ok ? '云函数与线上读链路全通，可以发布' : summary, S.cloudProbe.ok ? 'ok' : 'err');
+  } finally { setTimeout(() => { b.disabled = false; }, 500); }
+});
+
+$('#btnCloudInit').onclick = () => guard(async () => {
+  const b = $('#btnCloudInit'); b.disabled = true;
+  try {
+    const r = await api('/api/cloud/init', { method: 'POST', body: { app: null } });
+    S.cloudProbe = { kind: 'init', res: r };
+    toast(`集合就绪：新建 ${(r.collections || {}).created.length} 个，已存在 ${(r.collections || {}).skipped.length} 个`, 'ok');
+    refresh();
+  } finally { setTimeout(() => { b.disabled = false; }, 500); }
+});
+
+$('#btnCloudStatus').onclick = () => guard(async () => {
+  const b = $('#btnCloudStatus'); b.disabled = true;
+  try {
+    const r = await api('/api/cloud/status', { method: 'POST' });
+    S.cloudProbe = { kind: 'status', res: r };
+    renderCloud({ cloud: (r.local || {}).cloud || S.cloud });
+    toast(`线上 v${(r.remote || {}).dataVersion} · 分集 ${(r.remote || {}).counts.episodes} · 本地已推 ${r.local.pushed}`, 'ok');
+  } catch (e) {
+    S.cloudProbe = { kind: 'err', msg: '比对线上失败：' + e.message }; refresh();
+    throw e;
+  } finally { setTimeout(() => { b.disabled = false; }, 500); }
+});
+
+/* 云端：发布 */
+async function doPublish(extra, label) {
+  const body = Object.assign(cloudBody(), extra || {});
+  const r = await api('/api/cloud/publish', { method: 'POST', body });
+  toast(`${label}已提交：${r.scope} · 进度看左下任务`, 'ok');
+  S.cloudProbe = null; refresh();
+}
+
+$('#btnPublish').onclick = () => guard(async () => {
+  const sec = $('#pubAcct').value, col = $('#pubCol').value;
+  if (!sec && !col) {
+    if (!confirm('未选账号/栏目，按「全部待发布」处理？')) return;
+    return doPublish({ all: true }, '全量发布');
+  }
+  await doPublish({ sec_user_id: sec, column_id: col }, '该范围发布');
+});
+
+$('#btnPublishAll').onclick = () => guard(async () => {
+  if (!confirm(`把当前所有「已成文」条目全部推上云？（${(S.cloud || {}).pending || '?'} 集）`)) return;
+  await doPublish({ all: true, sec_user_id: '', column_id: '' }, '全量发布');
+});
+
+$('#btnCloudTexts').onclick = () => guard(async () => {
+  const sec = $('#pubAcct').value, col = $('#pubCol').value;
+  if (!sec && !col && !confirm('未选账号/栏目，按「全部已上线」刷新正文？')) return;
+  const body = Object.assign(cloudBody(), { sec_user_id: sec, column_id: col });
+  const r = await api('/api/cloud/texts', { method: 'POST', body });
+  toast(`正文刷新已提交：${r.scope} · 进度看左下任务`, 'ok');
+  S.cloudProbe = null; refresh();
+});
+
+$('#btnMetaSync').onclick = () => guard(async () => {
+  const r = await api('/api/cloud/sync', { method: 'POST', body: { note: $('#pubNote').value.trim() || '只同步元数据' } });
+  toast('元数据同步任务已开始（不重传音频和正文）', 'ok'); refresh();
+});
+
+$('#btnCloudCovers').onclick = () => guard(async () => {
+  const r = await api('/api/cloud/covers', {
+    method: 'POST',
+    body: { force: $('#coverForce').checked, dry_run: $('#coverDry').checked },
+  });
+  toast('封面转存任务已开始：一个合集一张，进度看左下任务', 'ok');
+  S.cloudProbe = null; refresh();
+});
+
+$('#btnOffline').onclick = () => guard(async () => {
+  const ids = [...S.selected];
+  if (!ids.length) throw new Error('先在「作品队列」勾选要下架的条目');
+  if (!confirm(`下架 ${ids.length} 集？线上会立刻看不到了。`)) return;
+  const r = await api('/api/cloud/offline', { method: 'POST', body: { ids, purge_files: $('#purgeFiles').checked } });
+  toast(`已下架 ${r.removed} 集，删除文件 ${r.filesRemoved || 0} 个`, 'ok');
+  S.cloudProbe = null; S.selected.clear(); refresh();
+});
+
+$('#btnRetract').onclick = () => guard(async () => {
+  const ids = [...S.selected];
+  if (!ids.length) throw new Error('先在「作品队列」勾选条目');
+  const r = await api('/api/cloud/retract', { method: 'POST', body: { ids } });
+  toast(`已撤回 ${r.retracted} 集的云端地址，下次发布重推`, 'ok');
+  S.selected.clear(); refresh();
+});
+
 $('#btnExport').onclick = () => guard(async () => {
   const r = await api('/api/export', { method: 'POST', body: {} });
-  toast(`已导出：articles ${r.articles} / playlist ${r.playlist} / columns ${r.columns}`, 'ok');
+  toast(`离线 json：articles ${r.articles} / playlist ${r.playlist} / columns ${r.columns}`, 'ok');
 });
 $('#btnExportDraft').onclick = () => guard(async () => {
   const r = await api('/api/export', { method: 'POST', body: { draft: true } });

@@ -3,8 +3,7 @@
 
 两条路，配置里 ASR_BACKEND=auto 自动选：
   * paraformer-v2 文件转写：把音频传到百炼自带的临时存储（免费、不需要
-    COS 密钥），再提交异步任务。实测 168 秒音频 4 秒出结果，最便宜。
-    已经配好自己的对象存储时会自动改用 COS 直链。
+    任何对象存储密钥），再提交异步任务。实测 168 秒音频 4 秒出结果，最便宜。
   * paraformer-realtime-v2：实时接口兜底。它对长音频不稳，所以按
     ASR_CHUNK_SEC 切片后拼接时间戳。
 
@@ -16,7 +15,6 @@ from __future__ import annotations
 
 import json
 import math
-import os
 import sys
 import time
 from pathlib import Path
@@ -45,11 +43,6 @@ def json_path(aweme_id: str) -> Path:
 def _fmt_ms(ms: int) -> str:
     s = int(ms) // 1000
     return f"{s // 3600:02d}:{s % 3600 // 60:02d}:{s % 60:02d}"
-
-
-def _cos_ready() -> bool:
-    return bool(os.environ.get("COS_SECRET_ID")
-                or os.environ.get("TENCENTCLOUD_SECRET_ID"))
 
 
 def _sentences_out(aweme_id: str, sentences: list[dict]) -> dict:
@@ -104,19 +97,7 @@ def _upload_temp(mp3: Path) -> str:
 
 
 def _public_url(aweme_id: str, mp3: Path) -> tuple[str, bool]:
-    """返回 (可下载地址, 是否需要 oss 解析头)"""
-    if _cos_ready():
-        try:
-            from uploader import CosUploader
-
-            up = CosUploader()
-            key = f"{config.COS_AUDIO_PREFIX}/asr/{aweme_id}{mp3.suffix}"
-            import media as _media
-            if up.upload_file(mp3, key, content_type=_media.media_type(mp3)):
-                return (f"https://{config.COS_BUCKET}.cos.{config.COS_REGION}"
-                        f".myqcloud.com/{key}", False)
-        except Exception as e:  # noqa: BLE001
-            print(f"  [warn] COS 不可用（{str(e)[:100]}），改用百炼临时存储")
+    """转写用的下载地址：一律走百炼自带临时存储，不占你任何云资源，也不需要密钥"""
     return _upload_temp(mp3), True
 
 

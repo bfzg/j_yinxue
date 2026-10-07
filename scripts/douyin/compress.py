@@ -14,7 +14,7 @@
 安全边界：
   - 已经 <= 目标码率的文件直接跳过，重复跑没有副作用
   - 先写 output/tmp/compact，校验时长差 <2 秒且体积变小，才替换原文件
-  - 已发布到 COS 的条目默认不动（体积已经算进线上 URL），要动加 --include-published
+  - 已发布到云端的条目默认不动（线上 URL 已经发出去了），要动加 --include-published
   - 档位是 opus/ogg 这类容器时告警跳过：微信小程序播放器不支持，别往库里灌
 """
 from __future__ import annotations
@@ -267,7 +267,7 @@ if __name__ == "__main__":
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--keep-source", action="store_true", help="保留原来的大文件")
     ap.add_argument("--include-published", action="store_true",
-                    help="连已发布到 COS 的条目一起转（URL 会变，需重发）")
+                    help="连已发布的条目一起转（URL 会变，需重新推云端）")
     a = ap.parse_args()
     config.ensure_dirs()
     conn = db.connect()

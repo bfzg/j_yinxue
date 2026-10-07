@@ -14,7 +14,6 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'play', index: number): void
   (e: 'open', episode: ColumnEpisode): void
 }>()
 
@@ -34,13 +33,7 @@ const orderLabel = computed(() => {
       <text class="ep-title">{{ episode.title }}</text>
       <view class="ep-meta">
         <text>{{ formatDate(episode.publishedAt) || '日期待补' }}</text>
-        <text class="dot">·</text>
-        <text>{{ formatDuration(episode.duration) }}</text>
       </view>
-    </view>
-
-    <view class="ep-play" :class="{ active: isPlaying }" @tap.stop="emit('play', index)">
-      <view class="play-icon" :class="isPlaying ? 'i-lucide-pause' : 'i-lucide-play'" />
     </view>
   </view>
 </template>
@@ -99,27 +92,5 @@ const orderLabel = computed(() => {
 
 .dot {
   color: #c3ccc5;
-}
-
-.ep-play {
-  display: flex;
-  flex-shrink: 0;
-  width: 64rpx;
-  height: 64rpx;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999rpx;
-  background: #eef4ef;
-  color: #1f5146;
-}
-
-.ep-play.active {
-  background: #1f5146;
-  color: #ffffff;
-}
-
-.play-icon {
-  width: 28rpx;
-  height: 28rpx;
 }
 </style>

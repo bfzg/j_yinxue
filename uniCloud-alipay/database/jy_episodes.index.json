@@ -1,0 +1,74 @@
+[
+  {
+    "IndexName": "sort_published",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "sort",
+          "Direction": "1",
+          "Type": "long"
+        },
+        {
+          "Name": "publishedAt",
+          "Direction": "-1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  },
+  {
+    "IndexName": "column_sort",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "columnId",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "sort",
+          "Direction": "1",
+          "Type": "long"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  },
+  {
+    "IndexName": "account_sort",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "accountId",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "sort",
+          "Direction": "1",
+          "Type": "long"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  },
+  {
+    "IndexName": "status_enabled",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "status",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "enabled",
+          "Direction": "1",
+          "Type": "bool"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

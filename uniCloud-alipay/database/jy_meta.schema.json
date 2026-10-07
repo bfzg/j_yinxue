@@ -1,0 +1,40 @@
+{
+  "bsonType": "object",
+  "description": "站点全局配置，固定一条文档，_id = site。",
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  },
+  "properties": {
+    "_id": {
+      "bsonType": "string",
+      "description": "文档ID，固定为 site"
+    },
+    "app": {
+      "bsonType": "object",
+      "description": "站点信息：name / author / cover / description"
+    },
+    "settings": {
+      "bsonType": "object",
+      "description": "全局设置：autoplayNext / playMode"
+    },
+    "dataVersion": {
+      "bsonType": "long",
+      "description": "数据版本号，每次发布 +1，客户端用它判断是否需要重新拉取"
+    },
+    "updatedAt": {
+      "bsonType": "long",
+      "description": "最后发布时间戳"
+    },
+    "lastRelease": {
+      "bsonType": "string",
+      "description": "最近一次发布记录 id"
+    },
+    "counts": {
+      "bsonType": "object",
+      "description": "各集合条数快照"
+    }
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "bsonType": "object",
+  "description": "抖音账号（栏目作者）。主要给后台展示和溯源用，小程序不直接读这张表。",
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  },
+  "properties": {
+    "_id": {
+      "bsonType": "string",
+      "description": "文档ID，用账号 slug"
+    },
+    "slug": {
+      "bsonType": "string",
+      "description": "账号英文标识，同时是云存储目录名"
+    },
+    "name": {
+      "bsonType": "string",
+      "description": "账号显示名",
+      "maxLength": 100
+    },
+    "style": {
+      "bsonType": "string",
+      "description": "内容风格描述"
+    },
+    "enabled": {
+      "bsonType": "bool",
+      "description": "是否启用采集"
+    },
+    "maxItems": {
+      "bsonType": "int",
+      "description": "最多采集条数，0 表示不限制"
+    },
+    "awemeCount": {
+      "bsonType": "long",
+      "description": "抖音作品总数"
+    },
+    "scannedItems": {
+      "bsonType": "long",
+      "description": "已入库条数"
+    },
+    "updatedAt": {
+      "bsonType": "long",
+      "description": "最后更新时间戳"
+    }
+  }
+}

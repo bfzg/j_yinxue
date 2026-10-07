@@ -15,5 +15,4 @@ jinja2>=3.0.0
 dashscope>=1.20.0         # qwen-plus 文章成文 + paraformer-v2 语音转写
 httpx>=0.25.0
 
-# 发布
-cos-python-sdk-v5>=1.9.40  # 上传 mp3 / 正文到腾讯云 COS
+# 发布（uniCloud 走云函数 HTTP 接口，不需要任何对象存储 SDK）

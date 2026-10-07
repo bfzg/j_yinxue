@@ -3,8 +3,10 @@ defineOptions({
   name: 'ArticleTopbar',
 })
 
-defineProps<{
+const props = defineProps<{
   title: string
+  /** 右上角胶囊按钮宽度，避免标题被遮住 */
+  rightInset?: string
 }>()
 
 const emit = defineEmits<{
@@ -13,7 +15,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <view class="topbar pt-2">
+  <view class="topbar pt-2" :style="{ paddingRight: props.rightInset || '0px' }">
     <view class="back-button" @tap="emit('back')">
       <view class="back-icon i-lucide-chevron-left" />
     </view>

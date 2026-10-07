@@ -61,23 +61,51 @@ def meta_path(aweme_id: str) -> Path:
     return config.ARTICLES_DIR / f"{aweme_id}.article.json"
 
 
-_COL_LINE = re.compile(r"^- 栏目：.*$", re.M)
+# 旧版正文末尾会写「- 栏目：」「- 时长：」「- 原视频：」三行尾注，现在不留了，
+# 存量文章用 strip_footer 一次性抹掉。只认文件最末，正文中段的分隔线不动。
+_FOOTER_BULLETS = re.compile(r"(?:\n\s*-\s*(?:栏目|时长|原视频)[：:][^\n]*)+\Z")
+_FOOTER_RULE = re.compile(r"\n\s*-{3,}[ \t]*\Z")
 
 
-def refresh_column_line(aweme_id: str, where: str) -> bool:
-    """归栏变动时只改正文尾注那一行，不必重跑模型
+def strip_footer(text: str) -> str:
+    """去掉正文末尾的旧尾注（栏目 / 时长 / 原视频）"""
+    if not text:
+        return text
+    body = _FOOTER_BULLETS.sub("", text.rstrip())
+    body = _FOOTER_RULE.sub("", body)
+    return body.rstrip() + "\n" if body.strip() else ""
 
-    栏目常常在文章生成之后才聚好，不回填的话前端正文里会一直挂着「栏目：单篇」。
+
+def strip_footers(conn=None, *, apply_changes: bool = True,
+                  verbose: bool = True) -> dict:
+    """一次性迁移：抹掉存量文章的旧尾注，改过的文件 mtime 会变新
+
+    mtime 一变，cloud_release 就认不出「已经推过」，下次发布自动重推正文。
     """
-    md = article_path(aweme_id)
-    if not md.exists():
-        return False
-    text = md.read_text(encoding="utf-8")
-    new = _COL_LINE.sub(lambda _m: f"- 栏目：{where}", text, count=1)
-    if new == text:
-        return False
-    md.write_text(new, encoding="utf-8")
-    return True
+    if conn is not None:
+        rows = conn.execute(
+            "SELECT article_path FROM videos "
+            "WHERE COALESCE(article_path, '') <> ''").fetchall()
+        files = [Path(r["article_path"]) for r in rows]
+    else:
+        files = sorted(config.ARTICLES_DIR.glob("*.md"))
+
+    changed: list[str] = []
+    for p in files:
+        if not p.exists():
+            continue
+        old = p.read_text(encoding="utf-8")
+        new = strip_footer(old)
+        if new == old:
+            continue
+        changed.append(p.name)
+        if apply_changes:
+            p.write_text(new, encoding="utf-8")
+    if verbose and changed:
+        print(f"  清理正文尾注 {len(changed)} 篇"
+              + ("" if apply_changes else "（dry-run，未写盘）"))
+    return {"files": len(files), "cleaned": len(changed),
+            "applied": apply_changes, "examples": changed[:10]}
 
 
 def _read_transcript(aweme_id: str) -> tuple[str, list]:
@@ -110,7 +138,10 @@ def _chapter_hint(chapters_json: Optional[str]) -> str:
 
 
 def render_markdown(data: dict, video: dict) -> str:
-    """固定版式：标题 / 导语 / 分节正文 / 本期要点 / 金句 / 出处"""
+    """固定版式：标题 / 导语 / 分节正文 / 本期要点 / 金句
+
+    正文到金句为止，栏目、时长、原视频不再写进正文，交给界面展示。
+    """
     title = tidy_text(data.get("title") or video.get("title") or "未命名")
     parts: list[str] = [f"# {title}", ""]
 
@@ -134,13 +165,6 @@ def render_markdown(data: dict, video: dict) -> str:
     if quotes:
         parts += ["## 值得记住的一句", ""] + [f"> {q}" for q in quotes] + [""]
 
-    col, ep = video.get("column_name"), video.get("episode_no")
-    where = f"{col} · 第 {ep} 集" if col and ep else (col or "单篇")
-    parts += ["---", "",
-              f"- 栏目：{where}",
-              f"- 时长：{round((video.get('duration_ms') or 0) / 60000)} 分钟",
-              f"- 原视频：{video.get('source_url') or ''}",
-              ""]
     return tidy_text("\n".join(parts)) + "\n"
 
 

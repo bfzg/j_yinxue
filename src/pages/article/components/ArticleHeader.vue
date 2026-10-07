@@ -21,7 +21,6 @@ function formatDate(value: string) {
 
 <template>
   <view class="article-head">
-    <text class="category">{{ props.column || props.category }}</text>
     <text class="title">{{ props.title }}</text>
     <view class="meta">
       <text>{{ formatDate(props.publishedAt) }}</text>

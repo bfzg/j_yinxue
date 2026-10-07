@@ -106,7 +106,10 @@ export function dropDuplicateLead(
   return out
 }
 
-/** 末尾的「出处」块（栏目 / 时长 / 原视频）单独收起来，避免混在正文里 */
+/**
+ * 末尾的「出处」块（栏目 / 时长 / 原视频）从正文里摘掉。
+ * 新版文章已经不写这段了，留着是因为 CDN 上可能还缓存着改版前的旧文件。
+ */
 export function splitSourceFooter(blocks: ArticleBlock[]) {
   const lastDivider = blocks.reduce((acc, b, i) => (b.type === 'divider' ? i : acc), -1)
   if (lastDivider === -1) {

@@ -9,7 +9,6 @@ defineProps<{
   articleId: string
   summary: string
   blocks: ArticleBlock[]
-  footer: ArticleBlock[]
   isLoading: boolean
   loadError: string
 }>()
@@ -48,19 +47,6 @@ defineProps<{
           </view>
         </view>
         <view v-else-if="block.type === 'divider'" class="divider" />
-      </block>
-    </view>
-
-    <view v-if="footer.length" class="footer">
-      <block v-for="(block, index) in footer" :key="`f-${index}`">
-        <view v-if="block.type === 'list'" class="footer-list">
-          <text v-for="(item, i) in block.items" :key="i" class="footer-line">
-            {{ item }}
-          </text>
-        </view>
-        <text v-else-if="block.type === 'paragraph'" class="footer-line">
-          {{ block.text }}
-        </text>
       </block>
     </view>
   </view>
@@ -160,19 +146,5 @@ defineProps<{
   height: 1rpx;
   margin: 56rpx 0;
   background: #e5eae6;
-}
-
-.footer {
-  margin-top: 44rpx;
-  padding-top: 26rpx;
-  border-top: 1rpx solid #eef1ee;
-}
-
-.footer-line {
-  display: block;
-  color: #9aa59e;
-  font-size: 23rpx;
-  line-height: 1.9;
-  word-break: break-all;
 }
 </style>

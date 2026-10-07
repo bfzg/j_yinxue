@@ -1,0 +1,50 @@
+{
+  "bsonType": "object",
+  "description": "栏目。一个栏目等于一个系列（如「大风歌」），episodeIds 决定线上集序。",
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  },
+  "properties": {
+    "_id": {
+      "bsonType": "string",
+      "description": "文档ID，用栏目标识的稳定字符串，便于幂等覆盖"
+    },
+    "name": {
+      "bsonType": "string",
+      "description": "栏目名",
+      "maxLength": 200
+    },
+    "accountId": {
+      "bsonType": "string",
+      "description": "所属账号 id"
+    },
+    "accountName": {
+      "bsonType": "string",
+      "description": "所属账号名"
+    },
+    "cover": {
+      "bsonType": "string",
+      "description": "栏目封面 URL"
+    },
+    "sort": {
+      "bsonType": "long",
+      "description": "栏目排序，越小越靠前"
+    },
+    "episodeTotal": {
+      "bsonType": "int",
+      "description": "预告总集数，0 表示连载中"
+    },
+    "nEpisodes": {
+      "bsonType": "int",
+      "description": "已上线集数"
+    },
+    "episodeIds": {
+      "bsonType": "array",
+      "description": "分集 _id 列表，顺序就是线上集序",
+      "arrayType": "string"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "function-jy-content",
+  "version": "1.2.0",
+  "description": "九哥隐学内容读写的唯一入口：/jy-content",
+  "dependencies": {},
+  "extensions": {
+    "uni-cloud-jql": {}
+  },
+  "main": "index.js"
+}

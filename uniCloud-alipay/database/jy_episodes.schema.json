@@ -1,0 +1,113 @@
+{
+  "bsonType": "object",
+  "description": "分集（一集 = 一个抖音视频 = 一篇文章 + 一段音频）。正文不进库，只存文件 URL。",
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  },
+  "properties": {
+    "_id": {
+      "description": "文档ID，直接用抖音视频 aweme_id，全局唯一，便于幂等覆盖",
+      "bsonType": "string"
+    },
+    "title": {
+      "bsonType": "string",
+      "description": "标题",
+      "maxLength": 300
+    },
+    "summary": {
+      "bsonType": "string",
+      "description": "AI 生成的摘要"
+    },
+    "category": {
+      "bsonType": "string",
+      "description": "分类标签"
+    },
+    "cover": {
+      "bsonType": "string",
+      "description": "封面图 URL"
+    },
+    "publishedAt": {
+      "bsonType": "string",
+      "description": "发布时间，ISO 字符串"
+    },
+    "articleUrl": {
+      "bsonType": "string",
+      "description": "正文 .txt / .md 的云存储地址"
+    },
+    "audioUrl": {
+      "bsonType": "string",
+      "description": "音频 .m4a 的云存储地址"
+    },
+    "articleFileId": {
+      "bsonType": "string",
+      "description": "正文云存储 fileID，删除文件时用"
+    },
+    "audioFileId": {
+      "bsonType": "string",
+      "description": "音频云存储 fileID，删除文件时用"
+    },
+    "enabled": {
+      "bsonType": "bool",
+      "description": "是否上线，false 表示下架但保留记录"
+    },
+    "sort": {
+      "bsonType": "long",
+      "description": "全局排序值，越小越靠前"
+    },
+    "accountId": {
+      "bsonType": "string",
+      "description": "所属账号 id"
+    },
+    "accountName": {
+      "bsonType": "string",
+      "description": "所属账号名"
+    },
+    "columnId": {
+      "bsonType": "string",
+      "description": "所属栏目 id"
+    },
+    "columnName": {
+      "bsonType": "string",
+      "description": "所属栏目名"
+    },
+    "episodeNo": {
+      "bsonType": "int",
+      "description": "栏目内集号"
+    },
+    "episodeTotal": {
+      "bsonType": "int",
+      "description": "栏目总集数"
+    },
+    "awemeId": {
+      "bsonType": "string",
+      "description": "抖音视频 ID"
+    },
+    "sourceUrl": {
+      "bsonType": "string",
+      "description": "抖音原始链接"
+    },
+    "duration": {
+      "bsonType": "int",
+      "description": "音频时长，秒"
+    },
+    "wordCount": {
+      "bsonType": "int",
+      "description": "正文字数"
+    },
+    "status": {
+      "bsonType": "string",
+      "description": "处理状态：scanned / article / published"
+    },
+    "channel": {
+      "bsonType": "string",
+      "description": "来源渠道，目前只有 douyin"
+    },
+    "syncedAt": {
+      "bsonType": "long",
+      "description": "最后一次推送到云上的时间戳"
+    }
+  }
+}

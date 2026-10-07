@@ -56,6 +56,7 @@ export default defineConfig(({ command, mode }) => {
     VITE_APP_PROXY_ENABLE,
     VITE_APP_PROXY_PREFIX,
     VITE_COPY_NATIVE_RES_ENABLE,
+    VITE_UNICLOUD_BASEURL,
   } = env
   const { WECHAT_DEVTOOLS_CLI_PATH } = localEnv
   console.log('环境变量 env -> ', env)
@@ -165,17 +166,26 @@ export default defineConfig(({ command, mode }) => {
       hmr: true,
       port: Number.parseInt(VITE_APP_PORT, 10),
       // 仅 H5 端生效，其他端不生效（其他端走build，不走devServer)
-      proxy: JSON.parse(VITE_APP_PROXY_ENABLE)
-        ? {
-            [VITE_APP_PROXY_PREFIX]: {
-              target: VITE_SERVER_BASEURL,
-              changeOrigin: true,
-              // 后端有/api前缀则不做处理，没有则需要去掉
-              rewrite: path =>
-                path.replace(new RegExp(`^${VITE_APP_PROXY_PREFIX}`), ''),
-            },
-          }
-        : undefined,
+      proxy: {
+      // 原有业务后台代理，按 VITE_APP_PROXY_ENABLE 开关
+        ...(JSON.parse(VITE_APP_PROXY_ENABLE)
+          ? {
+              [VITE_APP_PROXY_PREFIX]: {
+                target: VITE_SERVER_BASEURL,
+                changeOrigin: true,
+                // 后端有/api前缀则不做处理，没有则需要去掉
+                rewrite: path =>
+                  path.replace(new RegExp(`^${VITE_APP_PROXY_PREFIX}`), ''),
+              },
+            }
+          : {}),
+        // uniCloud 云函数：H5 开发态走本地代理绕 CORS，微信/App 端直连域名
+        '/unicloud-api': {
+          target: VITE_UNICLOUD_BASEURL || 'https://env-00jxu1ytdn0v.dev-hz.cloudbasefunction.cn',
+          changeOrigin: true,
+          rewrite: path => path.replace(/^\/unicloud-api/, ''),
+        },
+      },
     },
     esbuild: {
       drop: VITE_DELETE_CONSOLE === 'true' ? ['console', 'debugger'] : [],

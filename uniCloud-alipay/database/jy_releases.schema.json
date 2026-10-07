@@ -1,0 +1,41 @@
+{
+  "bsonType": "object",
+  "description": "发布记录。线上只留最近若干次，用于回看和核对版本。",
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  },
+  "properties": {
+    "_id": {
+      "bsonType": "string",
+      "description": "文档ID，rel_<时间戳>"
+    },
+    "dataVersion": {
+      "bsonType": "long",
+      "description": "本次发布对应的数据版本"
+    },
+    "releasedAt": {
+      "bsonType": "long",
+      "description": "发布时间戳"
+    },
+    "note": {
+      "bsonType": "string",
+      "description": "发布说明",
+      "maxLength": 200
+    },
+    "counts": {
+      "bsonType": "object",
+      "description": "发布时的条数快照"
+    },
+    "episodes": {
+      "bsonType": "long",
+      "description": "本次涉及的分集数"
+    },
+    "columns": {
+      "bsonType": "long",
+      "description": "本次涉及的栏目数"
+    }
+  }
+}

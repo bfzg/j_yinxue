@@ -43,8 +43,9 @@ const searchText = computed({
 <style lang="scss" scoped>
 .search-box {
   display: flex;
+  width: 100%;
+  min-width: 0;
   align-items: center;
-  width: 260rpx;
   height: 72rpx;
   box-sizing: border-box;
   padding: 0 24rpx;
@@ -53,10 +54,6 @@ const searchText = computed({
   background: #ffffff;
   box-shadow: 0 12rpx 30rpx rgba(43, 67, 57, 0.05);
   transition: width 240ms ease;
-}
-
-.search-box.focused {
-  width: 450rpx;
 }
 
 .search-icon {

@@ -1,12 +1,11 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
-import articles from '@/static/data/articles.json'
-import HomeArticleList from './components/HomeArticleList.vue'
-import HomeCategoryTabs from './components/HomeCategoryTabs.vue'
-import HomeEmptyState from './components/HomeEmptyState.vue'
+import ColumnFolder from './components/ColumnFolder.vue'
 import HomeSearchBar from './components/HomeSearchBar.vue'
 import { useAudioPlayerState } from '@/composables/useAudioPlayer'
-import type { Article } from '@/types/article'
+import { useTopInset } from '@/composables/useSafeArea'
+import { ensureSiteData, useSiteData } from '@/composables/useSiteData'
+import type { Column } from '@/types/column'
 
 defineOptions({
   name: 'Home',
@@ -24,92 +23,73 @@ definePage({
 
 const searchText = ref('')
 const isSearchFocused = ref(false)
-const activeCategory = ref('全部')
 
+const { site } = useSiteData()
 const audioState = useAudioPlayerState()
+const topInset = useTopInset(2)
 
-const playingArticleId = computed(() => {
-  if (!audioState.playing || !audioState.src) {
-    return ''
-  }
+/** 单篇桶没有系列感，排在所有合集后面 */
+function isLoose(column: Column) {
+  return (column.name || '').includes('单篇')
+}
 
-  return articles.items.find(item => item.audioUrl === audioState.src)?.id || ''
-})
-
-const articleItems = computed<Article[]>(() => {
+const columns = computed<Column[]>(() => {
   const keyword = searchText.value.trim().toLowerCase()
-  return [...articles.items]
-    .filter(item => item.enabled)
-    .filter(item => activeCategory.value === '全部' || item.category === activeCategory.value)
+  return site.columns
     .filter((item) => {
       if (!keyword) {
         return true
       }
-      return `${item.title}${item.summary}`.toLowerCase().includes(keyword)
+      return `${item.name}${item.accountName}`.toLowerCase().includes(keyword)
     })
-    .sort((a, b) => a.sort - b.sort)
+    .sort((a, b) => Number(isLoose(a)) - Number(isLoose(b)) || a.sort - b.sort)
 })
 
-const categories = computed(() => [
-  '全部',
-  ...Array.from(new Set(articles.items.filter(item => item.enabled).map(item => item.category))),
-])
+const episodeCount = computed(() =>
+  columns.value.reduce((acc, item) => acc + (item.nEpisodes ?? item.episodes?.length ?? 0), 0),
+)
 
-// 有音频播放时增加底部间距，防止被浮层遮挡
-const listPaddingClass = computed(() => {
+// 有音频播放时增加底部间距，防止最后一排被浮层遮挡
+const gridPaddingClass = computed(() => {
   return audioState.started ? 'pb-48' : 'pb-36'
 })
 
-function openArticle(article: Article) {
+function openColumn(column: Column) {
   uni.navigateTo({
-    url: `/pages/article/article?id=${article.id}`,
+    url: `/pages/column/column?id=${encodeURIComponent(column.id)}`,
   })
 }
 
-function openColumns() {
-  uni.navigateTo({
-    url: '/pages/columns/columns',
-  })
-}
+onShow(() => {
+  ensureSiteData()
+})
 </script>
 
 <template>
   <view class="page">
     <view class="header">
-      <view class="top-space" />
+      <view class="top-space" :style="{ height: topInset }" />
 
-      <view class="search-row px-2">
+      <view class="search-row px-4">
         <HomeSearchBar
-          v-model="searchText"
-          :focused="isSearchFocused"
-          @focus="isSearchFocused = true"
+          v-model="searchText" :focused="isSearchFocused" @focus="isSearchFocused = true"
           @blur="isSearchFocused = false"
         />
-        <view class="column-entry" @tap="openColumns">
-          <view class="column-entry-icon i-lucide-library" />
-          <text class="column-entry-text">栏目</text>
-        </view>
       </view>
-
-      <HomeCategoryTabs v-model:active-category="activeCategory" :categories="categories" />
     </view>
 
     <scroll-view class="content-scroll" scroll-y :show-scrollbar="false">
-      <view v-if="articleItems.length" class="list-area px-4" :class="listPaddingClass">
-        <view class="section-head">
-          <view>
-            <text class="section-title">共 {{ articleItems.length }} 篇</text>
-          </view>
+      <view v-if="columns.length" class="folder-grid px-4" :class="gridPaddingClass">
+        <view v-for="column in columns" :key="column.id" class="grid-item">
+          <ColumnFolder :column="column" @open="openColumn" />
         </view>
-
-        <HomeArticleList
-          :articles="articleItems"
-          :playing-id="playingArticleId"
-          @open="openArticle"
-        />
       </view>
 
-      <HomeEmptyState v-else />
+      <view v-else class="empty">
+        <view class="empty-icon i-lucide-folder-open" />
+        <text class="empty-title">{{ searchText ? '没有匹配的合集' : '还没有上架的合集' }}</text>
+        <text class="empty-desc">{{ searchText ? '换个关键词试试。' : '后台发布内容后，这里会出现按系列归好的合集。' }}</text>
+      </view>
     </scroll-view>
   </view>
 </template>
@@ -139,61 +119,96 @@ function openColumns() {
 }
 
 .top-space {
-  height: 92rpx;
+  height: 32rpx;
+}
+
+.brand-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.brand-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-title {
+  color: #18221e;
+  font-size: 40rpx;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.brand-sub {
+  margin-top: 6rpx;
+  color: #8b958f;
+  font-size: 22rpx;
+}
+
+.sync-dot {
+  display: flex;
+  width: 56rpx;
+  height: 56rpx;
+  align-items: center;
+  justify-content: center;
+  border: 1rpx solid #dfe6e1;
+  border-radius: 999rpx;
+  background: #ffffff;
+}
+
+.sync-icon {
+  width: 28rpx;
+  height: 28rpx;
+  color: #1f5146;
 }
 
 .search-row {
   display: flex;
+}
+
+.folder-grid {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 36rpx;
+}
+
+/* 两列网格用 margin 撑间距，小程序里 gap 兼容性不稳 */
+.grid-item {
+  width: calc(50% - 12rpx);
+  margin-right: 24rpx;
+  margin-bottom: 34rpx;
+}
+
+.grid-item:nth-child(2n) {
+  margin-right: 0;
+}
+
+.empty {
+  display: flex;
+  min-height: 60vh;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  gap: 14rpx;
 }
 
-.column-entry {
-  display: flex;
-  height: 72rpx;
-  margin-left: auto;
-  align-items: center;
-  gap: 8rpx;
-  padding: 0 22rpx;
-  border: 1rpx solid #dfe6e1;
-  border-radius: 999rpx;
-  background: #ffffff;
-  box-shadow: 0 12rpx 30rpx rgba(43, 67, 57, 0.05);
-  color: #1f5146;
+.empty-icon {
+  width: 74rpx;
+  height: 74rpx;
+  color: #c3ccc5;
 }
 
-.column-entry:active {
-  background: #eef4ef;
-}
-
-.column-entry-icon {
-  width: 30rpx;
-  height: 30rpx;
-}
-
-.column-entry-text {
-  font-size: 24rpx;
-  font-weight: 700;
-}
-
-.list-area {
-  min-height: 100%;
-}
-
-.section-head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  margin: 52rpx 0 22rpx;
-}
-
-.section-head > view {
-  display: flex;
-  align-items: baseline;
-  gap: 16rpx;
-}
-
-.section-title {
-  font-size: 22rpx;
+.empty-title {
+  color: #18221e;
+  font-size: 30rpx;
   font-weight: 800;
+}
+
+.empty-desc {
+  width: 480rpx;
+  color: #8b958f;
+  font-size: 24rpx;
+  text-align: center;
 }
 </style>

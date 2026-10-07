@@ -1,5 +1,7 @@
 import { computed, reactive, watch } from 'vue'
 
+import { withCacheBust } from '@/api/request'
+
 export interface AudioPlayerState {
   src: string
   currentTime: number
@@ -56,6 +58,10 @@ let audio: AudioEngine | null = null
 let currentSrc = ''
 let autoPlayOnSrc = false
 
+/** 哪个 src 已经成功 canplay / 已经换过缓存键重试过，用于 onError 里的一次性兜底 */
+let readySrc = ''
+let retriedSrc = ''
+
 // ── 播放列表（模块级，跨页面持久） ──
 const playlistState = reactive({
   playlist: [] as PlaylistItem[],
@@ -102,6 +108,7 @@ function createAudio() {
 
   engine.onCanplay(() => {
     state.loading = false
+    readySrc = currentSrc
     if (engine.duration > 0) {
       state.duration = engine.duration
     }
@@ -148,6 +155,17 @@ function createAudio() {
   })
 
   engine.onError(() => {
+    const src = currentSrc
+    // 云存储下载域名是 CDN，个别节点会把回源失败的响应缓存住；换个缓存键再要一次
+    if (src && readySrc !== src && retriedSrc !== src) {
+      retriedSrc = src
+      state.loading = true
+      engine.src = withCacheBust(src)
+      if (!autoPlayOnSrc) {
+        engine.play()
+      }
+      return
+    }
     state.playing = false
     state.loading = false
     state.error = '音频加载失败，请稍后再试。'

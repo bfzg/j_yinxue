@@ -31,6 +31,10 @@ interface ImportMetaEnv {
   readonly VITE_AUTH_MODE: 'single' | 'double'
   /** 是否清除console */
   readonly VITE_DELETE_CONSOLE: string
+  /** uniCloud 云函数 URL 化域名 */
+  readonly VITE_UNICLOUD_BASEURL?: string
+  /** H5 开发态覆盖 uniCloud 请求前缀，默认 /unicloud-api */
+  readonly VITE_UNICLOUD_PROXY?: string
   // 更多环境变量...
 }
 

@@ -3,6 +3,7 @@
 """
 from pathlib import Path
 import os
+import urllib.parse
 
 # 项目根目录
 BASE_DIR = Path(__file__).parent
@@ -33,6 +34,8 @@ AUDIO_DIR = OUTPUT_DIR / "audio"
 SUBTITLES_DIR = OUTPUT_DIR / "subtitles"
 ARTICLES_DIR = OUTPUT_DIR / "articles"
 LEGACY_DIR = OUTPUT_DIR / "legacy"
+# 合集封面转存前的本地缓存，一个合集一张，重推时不用回抖音再抓一遍
+COVERS_DIR = OUTPUT_DIR / "covers"
 
 # 元数据文件（记录已处理的视频，支持断点续传）
 METADATA_FILE = OUTPUT_DIR / "metadata.json"
@@ -170,12 +173,45 @@ BAILIAN_MODEL = "qwen-plus"
 ARTICLE_ENABLED = True
 ARTICLE_MAX_CHARS = 12000
 
-# ===== COS 配置 =====
-COS_BUCKET = "audio-1256405210"
-COS_REGION = "ap-shanghai"
-COS_BASE_URL = "https://audio-1256405210.cos.ap-shanghai.myqcloud.com/jiugeyinxue"
-COS_AUDIO_PREFIX = "jiugeyinxue"
-COS_TXT_PREFIX = "jiugeyinxue/txt"
+# ===== uniCloud（支付宝云）=====
+# 全部媒体与正文落 uniCloud 云存储，数据落云数据库，
+# 小程序只读 https://{SPACE}.dev-hz.cloudbasefunction.cn/jy-content，不再手动替换 json。
+_S = _read_settings()
+
+UNICLOUD_SPACE_ID = (os.getenv("DY_UNICLOUD_SPACE_ID", "")
+                     or _S.get("unicloud_space_id", "")
+                     or "env-00jxu1ytdn0v")
+# 云函数 URL 化后的入口（空间与别的项目共用，函数和路径都加 jy- 前缀）
+UNICLOUD_BASE_URL = (os.getenv("DY_UNICLOUD_BASE_URL", "")
+                     or _S.get("unicloud_base_url", "")
+                     or f"https://{UNICLOUD_SPACE_ID}.dev-hz.cloudbasefunction.cn").rstrip("/")
+UNICLOUD_CONTENT_PATH = "/jy-content"
+UNICLOUD_UPLOAD_PATH = "/jy-upload"
+# 云存储公共读永久地址前缀：拼上 cloudPath 就是不带签名的永久地址
+CLOUD_STORAGE_HOST = (os.getenv("DY_CLOUD_STORAGE_HOST", "")
+                      or _S.get("unicloud_storage_host", "")
+                      or f"https://{UNICLOUD_SPACE_ID}.normal.cloudstatic.cn").rstrip("/")
+# 上传根目录，必须与 function-jy-upload 的 ALLOW_PREFIXES 对齐
+CLOUD_PATH_PREFIX = (os.getenv("DY_CLOUD_PREFIX", "")
+                     or _S.get("unicloud_prefix", "")
+                     or "jiugeyinxue").strip("/")
+
+# 管理令牌不写进代码：优先环境变量 DY_UNICLOUD_TOKEN，其次同目录 unicloud.key
+UNICLOUD_KEY_FILE = BASE_DIR / "unicloud.key"
+
+
+def admin_token() -> str:
+    """本地面板唯一需要的手工配置：把令牌贴进 unicloud.key 即可"""
+    tok = os.getenv("DY_UNICLOUD_TOKEN", "").strip()
+    if not tok and UNICLOUD_KEY_FILE.exists():
+        tok = UNICLOUD_KEY_FILE.read_text(encoding="utf-8").strip()
+    return tok
+
+
+def cloud_url(path: str) -> str:
+    """云存储文件直链：目录设公共读后不带签名、永不过期，可以直接落库"""
+    return "/".join([CLOUD_STORAGE_HOST.rstrip("/"),
+                     urllib.parse.quote(str(path).lstrip("/"))])
 
 # 前端静态数据目录（导出 articles / playlist / columns）
 FRONTEND_DATA_DIR = BASE_DIR.parent.parent / "src" / "static" / "data"
@@ -191,8 +227,8 @@ SCAN_DEADLINE_MIN = 40     # 单账号浏览器采集最长分钟数
 # 面板服务端口
 PANEL_PORT = 8766
 
-# 本地预览：没配 COS 密钥时，导出的音视频/正文地址用面板的 /media 路由顶上，
-# 这样 uni-app 起个 H5 服务就能直接试听试读，不必先上云
+# 本地预览：还没推到云存储时，导出的音视频/正文地址用面板的 /media 路由顶上，
+# 这样 uni-app 起个 H5 服务就能直接试听试读（这类地址不会写进线上库）
 LOCAL_MEDIA_BASE = os.getenv("DY_LOCAL_MEDIA_BASE",
                              f"http://127.0.0.1:{PANEL_PORT}")
 
@@ -225,5 +261,5 @@ def get_cookie() -> str:
 def ensure_dirs():
     """确保所有输出目录存在"""
     for d in [OUTPUT_DIR, VIDEOS_DIR, AUDIO_DIR, SUBTITLES_DIR, ARTICLES_DIR,
-              LEGACY_DIR, DB_DIR]:
+              LEGACY_DIR, COVERS_DIR, DB_DIR]:
         d.mkdir(parents=True, exist_ok=True)

@@ -56,11 +56,14 @@ def _job_update(job_id: str, **fields):
             job["updated_at"] = db.now()
 
 
-def spawn(kind: str, fn: Callable[..., Any], *args,
-          note: str = "", **kwargs) -> dict:
+def spawn(kind: str, fn: Callable[..., Any], *args, note: str = "",
+          job_ref: Optional[dict] = None, **kwargs) -> dict:
     """
     起一个后台任务。fn 里如果要用浏览器，必须走 browser_scan.call，
     否则会撞上 "Playwright objects can only be used on the thread..."
+
+    job_ref 传一个空 dict 时，线程启动前就把 job 填进去，
+    长任务的 reporter 闭包可以拿 ref["id"] 实时回写进度，不存在竞态。
     """
     job_id = f"{kind}-{uuid.uuid4().hex[:8]}"
     job = {"id": job_id, "kind": kind, "status": "running", "note": note,
@@ -72,6 +75,10 @@ def spawn(kind: str, fn: Callable[..., Any], *args,
             for key in sorted(JOBS, key=lambda k: JOBS[k]["t0"])[:len(JOBS) - MAX_JOBS]:
                 if JOBS[key]["status"] != "running":
                     JOBS.pop(key, None)
+
+    if job_ref is not None:
+        job_ref.clear()
+        job_ref.update(job)
 
     def _wrap():
         try:
@@ -259,7 +266,7 @@ def api_overview():
                 "jobs": job_list(),
                 "process": processor.CURRENT.snapshot(),
                 "engine": config.SCAN_ENGINE, "port": config.PANEL_PORT,
-                "cos": bool(__import__("os").environ.get("COS_SECRET_ID")),
+                "cloud": _cloud_summary(conn),
                 "audio": _audio_summary(conn),
                 "server_time": db.now()}
     finally:
@@ -671,45 +678,10 @@ def api_assign(body: dict = Body(...)):
 
 @app.post("/api/publish")
 def api_publish(body: dict = Body(...)):
-    import exporter
-    ids = [str(i) for i in (body.get("ids") or [])]
-    column = body.get("column_id") or ""
-    sec = body.get("sec_user_id") or ""
-    conn = db.connect()
-    if column or (sec and not ids):
-        where = "stage='article'"
-        params: tuple = ()
-        if column:
-            where += " AND column_id=?"
-            params = (column,)
-        elif sec:
-            where += " AND sec_user_id=?"
-            params = (sec,)
-        ids += [r["aweme_id"] for r in db.list_videos(conn, where, params, limit=2000)]
-    conn.close()
-    ids = list(dict.fromkeys(ids))
-    if not ids:
-        raise HTTPException(400, "没有待发布条目（需要 stage=article）")
-    if running("publish"):
-        raise HTTPException(409, "发布任务进行中")
-
-    def _run(targets: list[str]):
-        conn = db.connect()
-        ok, fails = 0, []
-        try:
-            for aweme_id in targets:
-                try:
-                    exporter.publish_one(conn, aweme_id, verbose=False)
-                    ok += 1
-                except Exception as e:  # noqa: BLE001
-                    fails.append(f"{aweme_id}: {type(e).__name__}: {str(e)[:120]}")
-        finally:
-            conn.close()
-        return {"ok": ok, "fails": fails[:20],
-                "_note": f"发布 {ok}/{len(targets)}" + (f"，失败 {len(fails)}" if fails else "")}
-
-    job = spawn("publish", _run, ids, note=f"上传 COS：{len(ids)} 集")
-    return {"job_id": job["id"], "count": len(ids)}
+    """旧入口别名：统一走云端发布，避免两套发布逻辑分叉"""
+    b = dict(body or {})
+    b.setdefault("note", "面板发布")
+    return api_cloud_publish(b)
 
 
 @app.post("/api/export")
@@ -718,6 +690,269 @@ def api_export(body: dict = Body(...)):
     conn = db.connect()
     try:
         return exporter.export_all(conn, only_published=not body.get("draft"))
+    finally:
+        conn.close()
+
+
+# ---------- uniCloud 云端发布 ----------
+
+def _cloud_summary(conn) -> dict:
+    """面板红绿灯用：只看本地配置和本地进度，不发网络请求"""
+    import cloud_client as cc
+
+    pushed = conn.execute("SELECT COUNT(*) FROM videos WHERE cloud_pushed_at "
+                          "IS NOT NULL AND cloud_pushed_at != ''").fetchone()[0]
+    pending = conn.execute("SELECT COUNT(*) FROM videos WHERE stage='article'").fetchone()[0]
+    # 封面账：有内容的合集里已经转存了几张
+    cov = conn.execute(
+        "SELECT COUNT(*) FROM columns c WHERE c.cover_url_cloud IS NOT NULL "
+        "AND c.cover_url_cloud != '' AND EXISTS (SELECT 1 FROM videos v "
+        "WHERE v.column_id = c.column_id AND v.stage IN ('article','published'))").fetchone()[0]
+    cols = conn.execute(
+        "SELECT COUNT(*) FROM columns c WHERE EXISTS (SELECT 1 FROM videos v "
+        "WHERE v.column_id = c.column_id AND v.stage IN ('article','published'))").fetchone()[0]
+    out = cc.configured()
+    out.update({"pushed": int(pushed), "pending": int(pending),
+                "covers": int(cov), "coverTotal": int(cols)})
+    return out
+
+
+def _cloud_now() -> dict:
+    conn = db.connect()
+    try:
+        return _cloud_summary(conn)
+    finally:
+        conn.close()
+
+
+def _cloud_reporter(ref: dict):
+    def _r(msg: str):
+        jid = ref.get("id")
+        if jid:
+            _job_update(jid, note=str(msg)[:200])
+    return _r
+
+
+@app.get("/api/cloud/config")
+def api_cloud_config():
+    return _cloud_now()
+
+
+@app.post("/api/cloud/config")
+def api_cloud_set_config(body: dict = Body(...)):
+    """
+    面板里直接改云端配置（base_url / 前缀 / 令牌）。
+
+    令牌写进 unicloud.key（已在 .gitignore 里），其余落 settings.json；
+    改完本进程立刻生效，不用重启面板。
+    """
+    base = (body.get("base_url") or "").strip()
+    host = (body.get("storage_host") or "").strip()
+    prefix = (body.get("prefix") or "").strip()
+    tok = (body.get("token") or "").strip()
+    if base:
+        if not base.startswith("https://"):
+            raise HTTPException(400, "接口地址必须以 https:// 开头")
+        config.UNICLOUD_BASE_URL = base.rstrip("/")
+        _write_setting("unicloud_base_url", config.UNICLOUD_BASE_URL)
+    if host:
+        config.CLOUD_STORAGE_HOST = host.rstrip("/")
+        _write_setting("unicloud_storage_host", config.CLOUD_STORAGE_HOST)
+    if prefix:
+        config.CLOUD_PATH_PREFIX = prefix.strip("/")
+        _write_setting("unicloud_prefix", config.CLOUD_PATH_PREFIX)
+    if tok:
+        config.UNICLOUD_KEY_FILE.write_text(tok + "\n", encoding="utf-8")
+    return _cloud_now()
+
+
+@app.post("/api/cloud/test")
+def api_cloud_test():
+    """两个云函数分别探活，部署完第一时间能验联通"""
+    import cloud_client as cc
+
+    return cc.ping()
+
+
+@app.post("/api/cloud/init")
+def api_cloud_init(body: dict = Body(...)):
+    import cloud_release
+
+    try:
+        return cloud_release.init_site(body.get("app") or None)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(502, str(e)[:300])
+
+
+@app.post("/api/cloud/status")
+def api_cloud_status():
+    """线上 vs 本地条数对比，只读"""
+    import cloud_release
+
+    conn = db.connect()
+    try:
+        return cloud_release.compare(conn)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(502, str(e)[:300])
+    finally:
+        conn.close()
+
+
+@app.post("/api/cloud/publish")
+def api_cloud_publish(body: dict = Body(...)):
+    """
+    一条龙：音频 + 正文传云存储 → 元数据写云数据库 → dataVersion +1
+
+    范围三选一：ids / column_id / sec_user_id，都不带给 all=true 才做全量。
+    """
+    import cloud_release
+
+    ids = [str(i) for i in (body.get("ids") or [])]
+    column = body.get("column_id") or ""
+    sec = body.get("sec_user_id") or ""
+    limit = int(body.get("limit") or 0)
+    note = str(body.get("note") or "")[:180]
+    if not ids and not column and not sec and not body.get("all"):
+        raise HTTPException(400, "请勾选作品，或指定账号/栏目，或明确 all=true 发布全部待发布")
+    if running("cloud"):
+        raise HTTPException(409, "云端任务进行中，请等当前任务结束")
+
+    ref: dict = {}
+
+    def _run():
+        conn = db.connect()
+        try:
+            return cloud_release.release(
+                conn, ids=ids or None, column_id=column, sec_user_id=sec,
+                limit=limit, force=bool(body.get("force")), note=note,
+                dry_run=bool(body.get("dry_run")), reporter=_cloud_reporter(ref))
+        finally:
+            conn.close()
+
+    scope = len(ids) or ("栏目" if column else ("账号" if sec else "全部待发布"))
+    job = spawn("cloud-publish", _run, note=f"准备发布：{scope}", job_ref=ref)
+    return {"job_id": job["id"], "scope": scope}
+
+
+@app.post("/api/cloud/texts")
+def api_cloud_texts(body: dict = Body(...)):
+    """只重推正文：改了排版规则之后刷新线上文章，音频一个字节都不碰"""
+    import cloud_release
+
+    ids = [str(i) for i in (body.get("ids") or [])]
+    column = body.get("column_id") or ""
+    sec = body.get("sec_user_id") or ""
+    limit = int(body.get("limit") or 0)
+    if not ids and not column and not sec and not body.get("all"):
+        raise HTTPException(400, "请勾选作品，或指定账号/栏目，或明确 all=true 刷全部正文")
+    if running("cloud"):
+        raise HTTPException(409, "云端任务进行中，请等当前任务结束")
+
+    ref: dict = {}
+
+    def _run():
+        conn = db.connect()
+        try:
+            return cloud_release.release_texts(
+                conn, ids=ids or None, column_id=column, sec_user_id=sec,
+                limit=limit, note=str(body.get("note") or "")[:180] or "面板只刷正文",
+                dry_run=bool(body.get("dry_run")), reporter=_cloud_reporter(ref))
+        finally:
+            conn.close()
+
+    scope = len(ids) or ("栏目" if column else ("账号" if sec else "全部已上线"))
+    job = spawn("cloud-texts", _run, note=f"准备刷新正文：{scope}", job_ref=ref)
+    return {"job_id": job["id"], "scope": scope}
+
+
+@app.post("/api/cloud/sync")
+def api_cloud_sync(body: dict = Body(...)):
+    """只同步元数据（改了栏目名/上下架状态时用），不重传文件"""
+    import cloud_client as cc
+    import cloud_release
+
+    if running("cloud"):
+        raise HTTPException(409, "云端任务进行中")
+
+    ref: dict = {}
+
+    def _run():
+        conn = db.connect()
+        try:
+            meta = cloud_release.push_meta(conn, reporter=_cloud_reporter(ref))
+            rel = cc.call_content("pushRelease",
+                                  note=str(body.get("note") or "只同步元数据")[:180],
+                                  episodes=meta["episodes"]["total"])
+            return {"meta": meta, "release": rel}
+        finally:
+            conn.close()
+
+    job = spawn("cloud-sync", _run, note="同步元数据中", job_ref=ref)
+    return {"job_id": job["id"]}
+
+
+@app.post("/api/cloud/covers")
+def api_cloud_covers(body: dict = Body(...)):
+    """
+    合集封面转存：一个合集一张首图，抓下来传云存储，回写永久直链
+
+    发布流程里会自动跑这一步，这里留着单独入口：改了合集归属或换封面后
+    只想补封面、不想重传音频时用。
+    """
+    import covers
+
+    if running("cloud"):
+        raise HTTPException(409, "云端任务进行中，请等当前任务结束")
+    column = str(body.get("column_id") or "")
+    force = bool(body.get("force"))
+    dry = bool(body.get("dry_run"))
+
+    ref: dict = {}
+
+    def _run():
+        conn = db.connect()
+        try:
+            return covers.refresh(conn, column_ids=[column] if column else None,
+                                  force=force, dry_run=dry,
+                                  reporter=_cloud_reporter(ref))
+        finally:
+            conn.close()
+
+    job = spawn("cloud-cover", _run,
+                note="封面试跑（不上传）" if dry else "合集封面转存中", job_ref=ref)
+    return {"job_id": job["id"]}
+
+
+@app.post("/api/cloud/offline")
+def api_cloud_offline(body: dict = Body(...)):
+    """下架：默认只置 enabled=false，purge_files=true 才删云存储文件"""
+    import cloud_release
+
+    ids = [str(i) for i in (body.get("ids") or [])]
+    if not ids:
+        raise HTTPException(400, "请勾选要下架的条目")
+    conn = db.connect()
+    try:
+        return cloud_release.offline(conn, ids, purge_files=bool(body.get("purge_files")))
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(502, str(e)[:300])
+    finally:
+        conn.close()
+
+
+@app.post("/api/cloud/retract")
+def api_cloud_retract(body: dict = Body(...)):
+    """把某集从线上撤回本地态（清云端地址，下次发布会重推）"""
+    ids = [str(i) for i in (body.get("ids") or [])]
+    if not ids:
+        raise HTTPException(400, "请勾选条目")
+    import cloud_release
+
+    conn = db.connect()
+    try:
+        return cloud_release.retract(conn, ids)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(502, str(e)[:300])
     finally:
         conn.close()
 

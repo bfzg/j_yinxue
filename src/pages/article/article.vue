@@ -1,13 +1,14 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
-import articles from '@/static/data/articles.json'
 import { dropDuplicateLead, parseArticleMarkdown, splitSourceFooter } from './markdown'
-import playlist from '@/static/data/playlist.json'
 import ArticleActions from './components/ArticleActions.vue'
 import ArticleBody from './components/ArticleBody.vue'
 import ArticleHeader from './components/ArticleHeader.vue'
 import ArticleTopbar from './components/ArticleTopbar.vue'
-import { useAudioPlayerState, setPlaylist, useAudioPlayerWithPlaylist } from '@/composables/useAudioPlayer'
+import { loadArticleText } from '@/api/content'
+import { setPlaylist, useAudioPlayerWithPlaylist } from '@/composables/useAudioPlayer'
+import { useCapsuleInset, useTopInset } from '@/composables/useSafeArea'
+import { ensureSiteData, useSiteData } from '@/composables/useSiteData'
 import type { Article, ArticleBlock } from '@/types/article'
 import type { PlaylistItem } from '@/composables/useAudioPlayer'
 
@@ -24,15 +25,18 @@ definePage({
   },
 })
 
+const { site } = useSiteData()
+
 const articleId = ref('')
 const blocks = ref<ArticleBlock[]>([])
-const footer = ref<ArticleBlock[]>([])
 const isLoading = ref(false)
 const loadError = ref('')
-const pageTopPadding = ref(0)
+
+const topInset = useTopInset(12)
+const capsuleInset = useCapsuleInset()
 
 const article = computed<Article | undefined>(() => {
-  return articles.items.find(item => item.id === articleId.value) || articles.items[0]
+  return site.articles.find(item => item.id === articleId.value) || site.articles[0]
 })
 
 const { state: audioState, toggle, playByIndex } = useAudioPlayerWithPlaylist()
@@ -47,32 +51,51 @@ interface PlaylistRecord {
   columnId?: string
 }
 
-const allPlaylistItems = (playlist as unknown as { items: PlaylistRecord[] }).items
+const allPlaylistItems = site.playlist as PlaylistRecord[]
 
-// 连播只在同一栏目里跳转，否则「下一集」会串到别的系列
+function toPlaylistItem(item: { id: string, title: string, audioUrl: string, duration?: number }): PlaylistItem {
+  return { id: item.id, title: item.title, audioUrl: item.audioUrl, duration: item.duration }
+}
+
+function bySort(a: { sort?: number }, b: { sort?: number }) {
+  return (a.sort || 0) - (b.sort || 0)
+}
+
+/**
+ * 连播列表默认就是本篇所在的合集，按合集顺序播到最后一集为止。
+ * 文章不在 playlist 里（刚发布、字段缺失）时补上自己，避免点了没反应。
+ */
 const playlistItems = computed<PlaylistItem[]>(() => {
-  const enabled = allPlaylistItems.filter(item => item.enabled !== false)
-  const columnId = article.value?.columnId
-  const scoped = columnId
-    ? enabled.filter(item => (item.columnId || '') === columnId)
-    : []
-  const list = scoped.length > 1 ? scoped : enabled
+  const current = article.value
+  const withAudio = allPlaylistItems.filter(item => item.enabled !== false && !!item.audioUrl)
+  const columnId = current?.columnId
+  const scoped: PlaylistRecord[] = columnId
+    ? withAudio.filter(item => (item.columnId || '') === columnId)
+    : withAudio
 
-  return [...list]
-    .sort((a, b) => (a.sort || 0) - (b.sort || 0))
-    .map(item => ({
-      id: item.id,
-      title: item.title,
-      audioUrl: item.audioUrl,
-      duration: item.duration,
-    }))
+  const list = [...scoped]
+  if (current?.audioUrl && !list.some(item => item.id === current.id)) {
+    list.push({
+      id: current.id,
+      title: current.title,
+      audioUrl: current.audioUrl,
+      duration: current.duration,
+      sort: current.sort,
+      columnId: current.columnId,
+    })
+  }
+  return list.sort(bySort).map(toPlaylistItem)
 })
 
 function startPlay() {
-  if (!article.value?.audioUrl) return
+  if (!article.value?.audioUrl)
+    return
 
   const index = playlistItems.value.findIndex(item => item.id === article.value!.id)
-  if (index === -1) return
+  if (index === -1) {
+    uni.showToast({ title: '这一集暂时没有音频', icon: 'none' })
+    return
+  }
 
   // 正在播放当前文章 → 暂停/恢复
   if (audioState.started && audioState.src === article.value.audioUrl) {
@@ -97,48 +120,47 @@ function openColumn() {
   uni.navigateTo({ url: `/pages/column/column?id=${encodeURIComponent(columnId)}` })
 }
 
-function setPageTopPadding() {
-  const windowInfo = (uni as any).getWindowInfo?.() || uni.getSystemInfoSync()
-  pageTopPadding.value = Number(windowInfo.statusBarHeight || 0)
+/** 拿到文本才解析：走不到这里的内容一律不进 blocks */
+function applyRawText(raw: string) {
+  const parsed = dropDuplicateLead(parseArticleMarkdown(raw), {
+    title: article.value?.title,
+    summary: article.value?.summary,
+  })
+  // 尾注（栏目 / 时长 / 原视频）不再展示：正文生成时已去掉，
+  // 这里再挡一道，防 CDN 上还挂着改版前的旧文件
+  blocks.value = splitSourceFooter(parsed).body
+  if (!blocks.value.length) {
+    loadError.value = '正文内容正在整理，请稍后再试。'
+  }
 }
 
-function loadArticle() {
+async function loadArticle() {
   blocks.value = []
-  footer.value = []
   loadError.value = ''
 
-  if (!article.value?.articleUrl) {
+  const current = article.value
+  if (!current?.articleUrl) {
     return
   }
 
   isLoading.value = true
-  uni.request({
-    url: article.value.articleUrl,
-    // 正文是 .txt，部分端会按二进制返回，兜底成字符串再解析
-    dataType: 'text',
-    responseType: 'text',
-    success: (response: any) => {
-      const raw = typeof response.data === 'string'
-        ? response.data
-        : String(response.data ?? '')
-      const parsed = dropDuplicateLead(parseArticleMarkdown(raw), {
-        title: article.value?.title,
-        summary: article.value?.summary,
-      })
-      const split = splitSourceFooter(parsed)
-      blocks.value = split.body
-      footer.value = split.footer
-      if (!split.body.length) {
-        loadError.value = '正文内容正在整理，请稍后再试。'
-      }
-    },
-    fail: () => {
-      loadError.value = '正文加载失败，请稍后再试。'
-    },
-    complete: () => {
-      isLoading.value = false
-    },
-  })
+  try {
+    applyRawText(await loadArticleText(current.articleUrl, current.id))
+  }
+  catch {
+    // 直链、换键重试、云函数代取三条路都不通，只显示提示，绝不把错误页当正文渲染
+    loadError.value = '正文加载失败，点此重试。'
+  }
+  finally {
+    isLoading.value = false
+  }
+}
+
+/** 只在失败态生效：点正文区域重新走一遍三级通道 */
+function retryLoad() {
+  if (loadError.value && !isLoading.value) {
+    void loadArticle()
+  }
 }
 
 // 栏目标题优先展示，例如「王立群读汉武帝 · 第 35 集」
@@ -150,38 +172,30 @@ const columnLabel = computed(() => {
   return a.episodeNo ? `${a.columnName} · 第 ${a.episodeNo} 集` : a.columnName
 })
 
-onLoad((options) => {
-  setPageTopPadding()
-  articleId.value = options?.id || articles.items[0]?.id || ''
-  loadArticle()
+onLoad(async (options) => {
+  // 冷启直接进详情页时本地可能还是兜底数据，先把云端元数据对齐再取正文
+  await ensureSiteData()
+  articleId.value = options?.id || site.articles[0]?.id || ''
+  void loadArticle()
 })
 </script>
 
 <template>
-  <view v-if="article" class="page" :style="{ paddingTop: `${pageTopPadding}px` }">
-    <ArticleTopbar :title="article.title" @back="goBack" />
+  <view v-if="article" class="page" :style="{ paddingTop: topInset }">
+    <ArticleTopbar :title="article.title" :right-inset="capsuleInset" @back="goBack" />
     <ArticleHeader
-      :category="article.category"
-      :title="article.title"
-      :published-at="article.publishedAt"
-      :column="columnLabel"
-      :source="article.accountName"
+      :category="article.category" :title="article.title" :published-at="article.publishedAt"
+      :column="columnLabel" :source="article.accountName"
     />
 
     <view class="rule" />
 
     <!-- 听文章入口按钮 -->
-    <view
-      v-if="article.audioUrl"
-      class="listen-entry flex items-center justify-center gap-2"
-      @tap="startPlay"
-    >
+    <view v-if="article.audioUrl" class="listen-entry flex items-center justify-center gap-2" @tap="startPlay">
       <view
-        class="listen-icon"
-        :class="
-          audioState.playing && audioState.src === article.audioUrl
-            ? 'i-lucide-pause'
-            : 'i-lucide-volume-2'"
+        class="listen-icon" :class="audioState.playing && audioState.src === article.audioUrl
+          ? 'i-lucide-pause'
+          : 'i-lucide-volume-2'"
       />
       <view class="text-base">
         {{
@@ -193,19 +207,9 @@ onLoad((options) => {
     </view>
 
     <ArticleBody
-      :article-id="article.id"
-      :summary="article.summary"
-      :blocks="blocks"
-      :footer="footer"
-      :is-loading="isLoading"
-      :load-error="loadError"
+      :article-id="article.id" :summary="article.summary" :blocks="blocks"
+      :is-loading="isLoading" :load-error="loadError" @tap="retryLoad"
     />
-
-    <view v-if="article.columnId && article.columnName" class="column-link" @tap="openColumn">
-      <view class="column-link-icon i-lucide-library" />
-      <text class="column-link-text">{{ article.columnName }} · 全部剧集</text>
-      <view class="column-link-arrow i-lucide-chevron-right" />
-    </view>
 
     <ArticleActions />
 
@@ -242,6 +246,11 @@ onLoad((options) => {
 .listen-icon {
   width: 38rpx;
   height: 38rpx;
+}
+
+.listen-hint {
+  color: #7d8a82;
+  font-size: 21rpx;
 }
 
 .column-link {

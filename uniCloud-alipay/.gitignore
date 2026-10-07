@@ -1,0 +1,7 @@
+node_modules/
+# 云函数管理令牌：本地填好随代码上传，绝不进版本库
+**/secret.js
+*.zip
+.DS_Store
+
+dist-zip/

@@ -1,14 +1,14 @@
 # 抖音 → 音频 + 文章 采集流水线
 
 把抖音创作者主页的视频，自动变成「一集音频 + 一篇排版好的文章」，并按标题/合集自动归成栏目，
-最后导出成前端（uni-app）直接读的 json。
+最后发布到 uniCloud：音频和正文进云存储，元数据进云数据库，小程序运行时直接读云接口。
 
 ```
 账号主页 ──采集元数据──▶ sqlite ──下载音频流──▶ m4a ──语音转写──▶ 全文 ──通义千问──▶ 排版文章
                           │                                                    │
                           └──────────── 按合集/标题正则自动分栏目 ◀────────────
                                               │
-                                              └──▶ articles.json / playlist.json / columns.json
+                                              └──▶ uniCloud 云存储 + 云数据库（/jy-content 读接口）
 ```
 
 视频号（微信）相关代码已删除，本目录只服务抖音。TTS 暂未接入。
@@ -21,7 +21,7 @@
 | --- | --- | --- | --- |
 | 抖音登录态 | **必需**（采主页列表时） | 面板点「扫码登录」，或 `run.py login` | Cookie 自动写回 `cookie.txt`。建议用小号，见下方风险提示 |
 | 百炼 API Key | **必需** | 同目录 `bailian.key`（已 gitignore），或环境变量 `DASHSCOPE_API_KEY` | 用于 ASR 和文章生成 |
-| 腾讯云 COS | 可选 | `config.py` 的 `COS_*` | 不配也能跑，导出 json 里用本地/抖音直链，仅本地预览够用 |
+| uniCloud 服务空间 | 上线必需 | `unicloud.key`（已 gitignore）+ 控制台 URL 化 | 支付宝云空间 `env-00jxu1ytdn0v`，只存管理令牌；不配也能跑完采集，只是发不出去。见第十节 |
 | ffmpeg | 必需 | 见 `config.FFMPEG`（本机在 `/Volumes/cc/dev/ffmpeg/ffmpeg`） | 抽音频、转 mp3。macOS 没有 ffprobe，时长用 `ffmpeg -i` 解析 |
 
 Python 环境固定用本目录的 venv：
@@ -55,7 +55,7 @@ cd /Volumes/cc/code/j_yinxue/scripts/douyin
 2. **账号** —— 添加/删除账号、每个账号单独设抓取上限、一键采集全部。
 3. **作品队列** —— 筛选、勾选、单条重跑、批量处理，点开看文章正文和播放器。顶栏「全部待处理」把所有还没成文的作品一次排进队列（旁边的小圆标就是待处理条数），跑的过程中可随时点「停止」。
 4. **栏目** —— 自动归栏、改名、锁定（锁定的栏目不再被自动规则覆盖）、新建手工栏目。
-5. **发布 / 导出** —— 上传 COS、重建前端 json；「日志」页看实时输出，处理进度、耗时、失败原因都在顶栏。
+5. **云端发布** —— 测试连接、初始化集合、按账号/栏目把音频+正文推上云存储并写库、下线与撤回；离线兜底导出留作种子数据。「日志」页看实时输出，处理进度、耗时、失败原因都在顶栏。
 6. **音频体积** —— 选落库档位（AAC 单声道 32k/40k/48k、MP3 96k、原状），看全库预估，一键把存量音频原地重编瘦身，不用重新下载（见第七节）。
 
 面板只监听 `127.0.0.1`，本机自用；`/media/*` 路由放开了跨域，方便前端本地预览（见第六节）。
@@ -76,7 +76,15 @@ cd /Volumes/cc/code/j_yinxue/scripts/douyin
 .venv/bin/python run.py process --stage failed       # 只重跑失败的那些
 .venv/bin/python run.py process --column mix:7675...  --steps article --force   # 整栏目重生成文章
 .venv/bin/python run.py export                      # 只重建前端 json
-.venv/bin/python run.py publish                     # 上传 COS + 导出
+.venv/bin/python run.py cloud check                # 上传云函数前自检（语法/令牌/版本差）
+.venv/bin/python run.py articles                        # 抹掉存量文章的旧尾注
+.venv/bin/python run.py cloud texts --all              # 只重推正文，音频不碰
+.venv/bin/python run.py cloud test                  # 连通性 + 配置体检
+.venv/bin/python run.py cloud init                   # 建 jy_meta 种子（幂等）
+.venv/bin/python run.py cloud status                 # 本地/线上差多少条
+.venv/bin/python run.py cloud publish --limit 20     # 推文件 + 写库 + dataVersion+1
+.venv/bin/python run.py cloud retract <aweme_id>     # 下线某几集（删库记录，可选删文件）
+.venv/bin/python run.py export --all-stages          # 只重建本地兜底 json（不上线）
 .venv/bin/python run.py reset                       # 关掉残留的采集浏览器
 ```
 
@@ -98,6 +106,10 @@ cd /Volumes/cc/code/j_yinxue/scripts/douyin
 | `ASR_BACKEND` | `auto` | `file` 只用 paraformer-v2，`auto` 失败退回 realtime |
 | `DY_AUDIO_PROFILE` | `aac40_mono` | 音频档位，取值见第七节档位表（也可写进 `settings.json`）；旧名 `MP3_QUALITY` 只在 `mp3_stereo` 档生效 |
 | `DY_LOCAL_MEDIA_BASE` | `http://127.0.0.1:8766` | 本地预览导出时写进 json 的音视频/正文基址 |
+| `DY_UNICLOUD_BASE_URL` | `https://env-00jxu1ytdn0v.dev-hz.cloudbasefunction.cn` | 云函数 URL 化入口 |
+| `DY_CLOUD_STORAGE_HOST` | `https://env-00jxu1ytdn0v.normal.cloudstatic.cn` | 云存储公共读永久地址前缀 |
+| `DY_CLOUD_PREFIX` | `jiugeyinxue` | 云存储根目录，必须和 `function-jy-upload` 的 `ALLOW_PREFIXES` 一致 |
+| `DY_UNICLOUD_TOKEN` | 空 | 管理令牌，通常不设在环境变量，直接写 `unicloud.key` |
 
 ---
 
@@ -121,9 +133,9 @@ cd /Volumes/cc/code/j_yinxue/scripts/douyin
 
 ---
 
-## 六、本地预览（不配 COS 也能听、能读）
+## 六、本地预览（不连云也能听、能读）
 
-没配腾讯云密钥时，「导出（含未发布，本地预览）」/ `run.py export --all-stages`
+还没推云端时，「导出（含未发布，本地预览）」/ `run.py export --all-stages`
 会把直链写成面板自己的地址：
 
 ```
@@ -139,12 +151,13 @@ articleUrl = http://127.0.0.1:8766/media/article/text?aweme_id=<id>
 DY_LOCAL_MEDIA_BASE=http://192.168.1.20:8766 .venv/bin/python run.py export --all-stages
 ```
 
-正式上线仍然要配 `COS_SECRET_ID` / `COS_SECRET_KEY` 再跑 `run.py publish`，
-届时同一条目会被 COS 直链覆盖回去（导出按 id upsert）。
+正式上线走 `run.py cloud publish`：文件进云存储，库里存永久直链，小程序端
+`site.source` 变成 `cloud` 后，本地那套 `127.0.0.1` 直链会被云端地址整条覆盖。
 
-> 小程序注意：正文是用 `uni.request` 拉 `.txt` 的，微信只允许白名单域名。
-> 本地直链只能在开发者工具里勾掉「不校验合法域名」时用；正式上线必须先
-> `publish`，再把 COS 域名加进小程序后台的 request / downloadFile 白名单。
+> 小程序注意：元数据走 `POST /jy-content`，正文走 `uni.request` 拉云存储 `.txt`，
+> 微信只允许白名单域名。开发者工具里可以勾掉「不校验合法域名」先用，
+> 真机与正式版必须把下面两个域名加进小程序后台的 request / downloadFile 白名单：
+> `env-00jxu1ytdn0v.dev-hz.cloudbasefunction.cn`、`env-00jxu1ytdn0v.normal.cloudstatic.cn`。
 
 ## 七、音频体积：档位与存量瘦身
 
@@ -179,11 +192,11 @@ DY_LOCAL_MEDIA_BASE=http://192.168.1.20:8766 .venv/bin/python run.py export --al
 安全边界：已经是目标档位且码率不超过目标 1.3 倍的直接跳过，重复跑没有副作用；先写
 `output/tmp/compact`，校验时长差 <2.5 秒且确实变小才替换原文件并回写 `audio_path`
 （只改 `audio_path`，不动 `stage`/`error`/`updated_at`，面板排序不会乱）。已 `published`
-的条目默认不动，要一起转加 `--include-published`，转完重发一次让 COS 直链指到新文件。
+的条目默认不动，要一起转加 `--include-published`，转完 `cloud publish --force` 重推一次让云端地址指到新文件。
 
 面板「音频体积」页：下拉切档位（写 `settings.json`，只影响**以后新增**的音频）、
 「只算账」（dry run）、「瘦身存量」（`/api/audio/compact`，进度在任务表里看）。
-`/media/audio` 和 COS 上传都按真实后缀给 `Content-Type`，`.m4a` 必须回 `audio/mp4`，
+`/media/audio` 和云存储上传都按真实后缀给 `Content-Type`，`.m4a` 必须回 `audio/mp4`，
 否则 iOS / 微信 H5 会拒绝播放。
 
 ---
@@ -196,8 +209,9 @@ DY_LOCAL_MEDIA_BASE=http://192.168.1.20:8766 .venv/bin/python run.py export --al
 | 每次运行的输出 | 末尾打印本次百炼花费（`llm.py` 的 `USAGE` 只在进程内累计，不落库） |
 | `output/audio/<aweme_id>.m4a` | 抽出来并按档位压好的音频，直接给前端播放器用 |
 | `output/subtitles/<aweme_id>.json` | 转写全文 + 时间戳 |
-| `output/articles/<aweme_id>.md` | 排版好的文章（标题/导语/小标题/本期要点/值得记住的一句/尾部元信息） |
-| `src/static/data/*.json` | 前端读的 `articles.json` / `playlist.json` / `columns.json` |
+| `output/articles/<aweme_id>.md` | 排版好的文章（标题/导语/小标题/本期要点/值得记住的一句）。正文到金句为止，栏目、时长、原视频都写在界面上，不再进正文 |
+| `src/static/data/*.json` | 兜底种子：`articles.json` / `playlist.json` / `columns.json`，只在云端不可达或首次冷启时用 |
+| `db/pipeline.sqlite` 的 `audio_url` / `article_url` | 发布后回写的云存储永久地址；正文地址尾部带 `?v=<内容指纹>`，改一次排版换一个地址，CDN 旧缓存自动作废 |
 
 `md` 正文结构固定为：一级标题 → `>` 导语 → 若干 `##` 小节 → 「本期要点」列表 → 「值得记住的一句」引用 → 尾部栏目/时长/原视频链接。前端 [markdown.ts](/Volumes/cc/code/j_yinxue/src/pages/article/markdown.ts) 按这个子集渲染。
 
@@ -214,7 +228,133 @@ DY_LOCAL_MEDIA_BASE=http://192.168.1.20:8766 .venv/bin/python run.py export --al
 - `paraformer-realtime-v2` 兜底时偶发 `websocket close`，已改成每段最多重试 3 次。批量跑完如果还有 failed，`run.py process --stage failed` 重跑一遍就行。
 - 图文作品（`kind='image_text'`）不进处理队列，这条流水线只处理视频。
 
-## 十、以后要接自定义音色（TTS）
+## 十、上线到 uniCloud（部署清单）
+
+服务空间 `env-00jxu1ytdn0v`（支付宝云）**与另一个项目 questions_weishi 共用**，
+所以两个函数的名字和 URL 路径都带 `jy-` 前缀：`/upload` 已经被那边的
+`function-upload` 占掉，撞上去会互相吃返回值。
+
+代码位置：[uniCloud-alipay/](/Volumes/cc/code/j_yinxue/uniCloud-alipay)
+
+```
+cloudfunctions/function-jy-content/   读接口 + 写接口（/jy-content）
+cloudfunctions/function-jy-upload/    云存储上传（/jy-upload）
+database/*.schema.json                jy_accounts / jy_columns / jy_episodes / jy_meta / jy_releases
+```
+
+### 部署前自检（不联网也能跑）
+
+云函数用内存数据库桩跑一遍全部读写接口，31 项检查：
+
+```bash
+node uniCloud-alipay/test/content-harness.cjs
+node uniCloud-alipay/test/in-mode-harness.cjs
+```
+
+第二个专门盯批量查询：同一份代码在「只认 in」「只认 in_」「两个都没挂」「挂着 in 但一查
+就抛」四种运行时下各起一个子进程，都必须取到完整 250 集（后两种要看见它降级成逐条取）。
+改过 `read.js` / `write.js` / `lib.js` 就两条都跑，逻辑问题在这一步暴露比在控制台便宜得多。
+
+### 首次部署（做一次就够）
+
+1. **上传云函数**。上传单元是**函数目录本身**，不是任何 zip：
+   HBuilderX 里右键 `uniCloud-alipay/cloudfunctions/function-jy-content`
+   →「上传部署」，`function-jy-upload` 同理。（HBuilderX 自己在
+   `uniCloud-alipay/dist-zip/` 生成的中间产物不用管，也别提交。）
+   传之前先跑一次自检，它会逐个 `node --check`、比对三处令牌、并报出
+   本地版本比线上高的函数，免得传上去才发现带着旧 bug：
+   ```bash
+   .venv/bin/python run.py cloud check
+   ```
+2. **配 URL 化**。控制台「云函数 → 配置 URL 化」分别绑 `/jy-content`、`/jy-upload`，
+   两条都要允许 POST。没绑就是 404，`run.py cloud test` 会直接指出哪个没通。
+3. **建集合**。上传 `database/*.schema.json`（或跑一次 `run.py cloud init` 让函数自建
+   `jy_meta`）。schema 的 read/update 权限全关，读写一律经云函数，前端拿不到库。
+4. **云存储开公共读**。把 `jiugeyinxue/` 目录设为公共读。不开也能传，但落库的
+   只能是云函数回传的**临时签名地址**，几小时后就 403，面板会给出 warning。
+5. **管理令牌**。三处必须同一串（现在已一致，43 字符）：
+   `scripts/douyin/unicloud.key`、两个函数目录里的 `secret.js`。
+   换令牌时三处一起换，否则写接口 401。
+6. **微信后台白名单**。域名是**精确匹配**，`api-hz` 和 `dev-hz` 是两个不同主机，
+   加错一个真机就静默失败：
+   - request：`env-00jxu1ytdn0v.dev-hz.cloudbasefunction.cn`（`POST /jy-content`）
+   - request + downloadFile：`env-00jxu1ytdn0v.normal.cloudstatic.cn`
+     （正文 `.txt` 走 `uni.request`，音频走 `downloadFile`，两边都要）
+   - `<image>` 不吃域名白名单，封面直链随便哪个域都能显示。
+
+### 线上体检（改过云函数、或小程序页面数据不对时先跑这个）
+
+```bash
+.venv/bin/python run.py cloud health     # 失败退出码 1，能直接拿去脚本里判活
+```
+
+它把小程序真正会踩的读动作逐个打一遍线上：`version` → `manifest` → `columns` →
+`column` → `episodes` → `article` → `articleText`，最后审一遍封面/音频/正文的地址是不是
+都在云存储域。面板「云端发布」页的「测试连接」用的是同一套，明细表里每个动作一行。
+线上函数版本落后（缺动作）时，返回里的 `hint` 会直接点名要重传哪个 zip。
+
+为什么探活不够：`column` / `episodes` 按 `_id` 批量取，走的是数据库 `in` 命令。
+支付宝云运行时上 `command` 挂的到底是 `in` 还是 JQL 那套 `in_`，各家不一致，
+早期版本写死 `in_` 时 `ping` 照样绿灯，**合集详情页却整条 500**。现在 `lib.js`
+的 `docsByIds()` 先探测运行时认哪个（`version` 返回里的 `inMode` 就是结论），
+两个都不认、或者查询直接抛错，就退回小并发逐条 `doc(id).get()`。
+`column` / `episodes` 的返回值里带 `fetchMode`（`in` / `in_` / `doc`），线上出问题时
+先 curl 一次就知道走的是哪条路，不用猜。
+
+### 正文 403 / 满屏 XML：CDN 边缘缓存了错误页
+
+现象：小程序正文页整页是 `<?xml ... <Code>SignatureDoesNotMatch</Code>`，控制台里
+`GET .../article/epNNN_xxx.txt 403`。
+
+结论：**不是目录权限**。公共读没开或对象不存在，OSS 给的是 `AccessDenied` / `NoSuchKey`，
+不会是「签名不匹配」；而且这条 URL 用 curl 直接取是 200。`SignatureDoesNotMatch` 里的签名
+是下载域名（CDN）**回源时自己加的**，说明某个边缘节点的回源签名算错或过期了，而 CDN 默认
+会把 4xx 一起缓存，于是这个节点上所有人都稳定拿到那段错误 XML。同一目录下的音频走
+`downloadFile` 是另一条取数路径，所以经常是「能听不能读」。
+
+两层处理，都已落地：
+
+1. **平台侧**：uniCloud 控制台 → 云存储 → 刷新预热，对 `jiugeyinxue/` 做目录刷新，
+   把被缓存的错误响应踢掉；顺手确认公共读是**整桶**而不是某个前缀。
+2. **代码侧**：正文取数改成三级通道 `loadArticleText()`（`src/api/content.ts`）——
+   直链 → 加一次性 `_jyrb` 换缓存键重试 → 云函数 `articleText` 服务端代取。
+   最后那条在函数里还会再分四步试：CDN 原链 → CDN 换键 → **源站域名** → 源站换键，
+   源站 `env-00jxu1ytdn0v-hz.object.cloudrun.cloudbaseapp.cn` 和下载域名是同一个桶，
+   少一层 CDN，节点被错误页毒化时照样能取到正文。三条通道全断才提示加载失败。`src/api/request.ts` 的 `fetchText()` 会自己判
+   `statusCode`、空 body 和错误页 XML，**任何一条通道拿到的都不是正文时绝不进渲染**；
+   音频在 `onError` 里也有一次换缓存键重试。`articleText` 只允许取自家存储桶，
+   不会被当成开放代理刷外链。
+
+### 日常发布### 日常发布
+
+```bash
+.venv/bin/python run.py cloud status            # 看本地有几集没推
+.venv/bin/python run.py cloud publish --dry-run # 只算账不上传
+.venv/bin/python run.py cloud publish --limit 50
+.venv/bin/python run.py cloud publish --all     # 全站重推（内容没变的自动跳过）
+```
+
+`publish` 走完三步：文件上云存储 → 元数据 upsert → `pushRelease` 让
+`jy_meta.dataVersion` +1。小程序下次进首页比对版本号自动拉新数据，
+**不需要重新发版，也不需要再手工替换 json**。
+
+面板「云端发布」页是同一套动作的图形化入口，红绿灯就是上面这些检查项的结果。
+
+### 前端读数据的方式
+
+[useSiteData.ts](/Volumes/cc/code/j_yinxue/src/composables/useSiteData.ts) 三级回落：
+
+```
+云数据库（manifest.dataVersion 变了才取数）> 本地缓存 jy:* > 打包的 static/data/*.json
+```
+
+单集正文按 `articleUrl` 现取，不进列表响应，所以列表体量小、翻页也省。
+H5 开发态走 vite 的 `/unicloud-api` 代理绕 CORS，小程序和 App 直连域名
+（[constant/index.ts](/Volumes/cc/code/j_yinxue/src/constant/index.ts)）。
+
+---
+
+## 十一、以后要接自定义音色（TTS）
 
 现在只做「视频 → 音频 + 文章」，音色是抖音原声。要换成你自己的声音，链路已经留好了口子：
 

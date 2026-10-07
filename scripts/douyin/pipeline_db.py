@@ -78,6 +78,10 @@ CREATE TABLE IF NOT EXISTS columns (
     sort            INTEGER DEFAULT 0,
     locked          INTEGER DEFAULT 0,
     cover_url       TEXT,
+    cover_url_cloud TEXT,
+    cover_file_id   TEXT,
+    cover_source_url TEXT,
+    cover_pushed_at TEXT,
     updated_at      TEXT
 );
 
@@ -106,8 +110,12 @@ def now() -> str:
 
 # 老库缺列时自动补齐，改表结构不用删库重扫
 _MIGRATIONS = {
-    "videos": ["audio_url TEXT", "article_url TEXT"],
+    "videos": ["audio_url TEXT", "article_url TEXT",
+               "audio_file_id TEXT", "article_file_id TEXT",
+               "cloud_pushed_at TEXT"],
     "accounts": ["scan_note TEXT"],
+    "columns": ["cover_url_cloud TEXT", "cover_file_id TEXT",
+                "cover_source_url TEXT", "cover_pushed_at TEXT"],
 }
 
 
@@ -274,6 +282,22 @@ def list_columns(conn, sec_user_id: str = None) -> list[dict]:
         params = (sec_user_id,)
     sql += " ORDER BY c.sort, c.name"
     return [dict(r) for r in conn.execute(sql, params).fetchall()]
+
+
+def set_column_cover(conn, column_id: str, *, cloud_url: str, file_id: str = "",
+                     source_url: str = ""):
+    """
+    合集封面的云端结果：永久直链 + fileID + 当初抓的那张原图地址
+
+    原图地址一并存着，下次发布就能判断抖音那边换没换封面，没换直接跳过，
+    不必再抓一遍再传一遍。
+    """
+    conn.execute(
+        "UPDATE columns SET cover_url_cloud=?, cover_file_id=?, "
+        "cover_source_url=?, cover_pushed_at=? WHERE column_id=?",
+        (cloud_url, file_id, source_url, now(), column_id),
+    )
+    conn.commit()
 
 
 def delete_column(conn, column_id: str):

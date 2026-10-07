@@ -352,31 +352,6 @@ def _single_bucket(conn, rows: list[dict], sec_user_id: str, acc_name: str,
     if verbose:
         print(f"  单篇兜底 {len(left)} 条")
     return len(left)
-
-
-def _refresh_footers(conn, verbose: bool = True) -> int:
-    """把已生成正文里的「- 栏目：」尾注回填成最新归栏结果
-
-    栏目多半是在文章写完之后才聚好的，不回填的话前端正文会一直显示「单篇」，
-    而这里只改一行，不用重跑模型烧 token。
-    """
-    from article_formatter import refresh_column_line
-
-    rows = conn.execute(
-        """SELECT v.aweme_id, v.episode_no, c.name
-           FROM videos v LEFT JOIN columns c ON c.column_id = v.column_id
-           WHERE COALESCE(v.article_path, '') <> ''""").fetchall()
-    n = 0
-    for r in rows:
-        name, ep = r["name"], r["episode_no"]
-        where = f"{name} · 第 {ep} 集" if name and ep else (name or "单篇")
-        if refresh_column_line(r["aweme_id"], where):
-            n += 1
-    if verbose and n:
-        print(f"  回填正文栏目尾注 {n} 篇")
-    return n
-
-
 def build_columns(conn=None, sec_user_id: Optional[str] = None,
                   use_ai: bool = True, min_ep: int = 3, verbose: bool = True) -> dict:
     """给账号下所有作品分栏目。返回统计"""
@@ -385,7 +360,7 @@ def build_columns(conn=None, sec_user_id: Optional[str] = None,
     locked_cols = _locked_column_ids(conn)
     locked_videos = _locked_video_ids(conn)
     out = {"mix": 0, "regex": 0, "ai": 0, "single": 0, "reset": 0, "pruned": 0,
-           "footers": 0, "protected": len(locked_videos)}
+           "protected": len(locked_videos)}
 
     sql = "SELECT * FROM videos"
     params: tuple = ()
@@ -428,7 +403,6 @@ def build_columns(conn=None, sec_user_id: Optional[str] = None,
         out["single"] += _single_bucket(conn, rest, sec, name, verbose)
 
     out["pruned"] = _prune_empty_columns(conn, set(per_acc), verbose)
-    out["footers"] = _refresh_footers(conn, verbose)
 
     if own:
         conn.close()
