@@ -4,6 +4,7 @@ cookie.txt
 __pycache__/
 *.pyc
 bailian.key
+settings.json
 .pw-chrome/
 .pw-anon/
 db/

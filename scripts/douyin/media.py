@@ -1,9 +1,13 @@
 """
-下载 + 转码：抖音直链 → output/audio/{aweme_id}.mp3
+下载 + 转码：抖音直链 → output/audio/{aweme_id}.{档位扩展名}
 
 直链必须先 resolve_media() 现取现用，列表页里的链接几分钟后就失效。
 优先下纯音频流（bit_rate_audio），比整条视频小一个数量级；拿不到再退回
 最低码率 mp4 并用 -vn 抽音频。
+
+产物格式跟着 config.AUDIO_PROFILE 走，默认单声道 AAC 40kbps（.m4a）。
+历史上已经是 .mp3 的存量文件不重下，audio_path_any() 会认它们，
+要瘦身跑 compress.py。
 """
 from __future__ import annotations
 
@@ -20,19 +24,46 @@ _UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
        "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
 
 _extractor: Optional[AudioExtractor] = None
+_extract_profile = ""
 # 连续失败计数与冷却截止时间，进程内有效
 _F2_COOLDOWN = {"fails": 0, "until": 0.0, "sec": getattr(config, "F2_COOLDOWN_SEC", 600)}
 
 
 def _ext() -> AudioExtractor:
-    global _extractor
-    if _extractor is None:
-        _extractor = AudioExtractor(mp3_quality=config.MP3_QUALITY, delete_video=True)
+    """档位变了就重建提取器，面板切音质不用重启"""
+    profile = config.audio_profile()
+    global _extractor, _extract_profile
+    if _extractor is None or _extract_profile != profile["name"]:
+        _extractor = AudioExtractor(profile=profile, delete_video=True)
+        _extract_profile = profile["name"]
     return _extractor
 
 
 def audio_path(aweme_id: str) -> Path:
-    return config.AUDIO_DIR / f"{aweme_id}.mp3"
+    """当前档位的落库路径（不一定存在）"""
+    return config.AUDIO_DIR / f"{aweme_id}.{config.audio_profile()['ext']}"
+
+
+def audio_path_any(aweme_id: str) -> Path:
+    """
+    已存在的音频，优先级：当前档位 > 其他档位扩展名 > 老的 .mp3。
+    找不到时返回当前档位路径，让调用方拿到一个可写的目标名。
+    """
+    exts = [config.audio_profile()["ext"]]
+    exts += [p["ext"] for p in config.AUDIO_PROFILES.values() if p["ext"] not in exts]
+    for e in exts:
+        f = config.AUDIO_DIR / f"{aweme_id}.{e}"
+        if f.exists() and f.stat().st_size > 10240:
+            return f
+    return audio_path(aweme_id)
+
+
+def media_type(path: Path) -> str:
+    """给 FileResponse / COS ContentType 用"""
+    for prof in config.AUDIO_PROFILES.values():
+        if path.suffix == "." + prof["ext"]:
+            return prof["media_type"]
+    return "application/octet-stream"
 
 
 def _resolve_via_browser(aweme_id: str):
@@ -87,13 +118,13 @@ def _download(url: str, dest: Path, timeout: int = 180) -> bool:
 
 
 def _to_mp3(src: Path, aweme_id: str) -> Optional[Path]:
-    """ffmpeg 统一转成 mp3 + 响度标准化，中间文件用完即删"""
+    """ffmpeg 按档位重编 + 响度标准化，中间文件用完即删"""
     target = audio_path(aweme_id)
     if target.exists():
         src.unlink(missing_ok=True)
         return target
     # AudioExtractor 用输入文件名（去扩展名）决定产物名，中间文件带码率后缀时
-    # 产物会叫 {aweme_id}.a0.mp3，统一挪回幂等路径 {aweme_id}.mp3
+    # 产物会叫 {aweme_id}.a0.m4a，统一挪回幂等路径 {aweme_id}.m4a
     result = _ext().extract(src, config.AUDIO_DIR)
     if not result:
         return None
@@ -109,11 +140,12 @@ def _to_mp3(src: Path, aweme_id: str) -> Optional[Path]:
 
 def ensure_audio(aweme_id: str, force: bool = False,
                  verbose: bool = True) -> Path:
-    """幂等：已有 mp3 直接返回，否则下载并转码"""
+    """幂等：本地已有任意档位音频就直接用，否则下载并按当前档位转码"""
     config.ensure_dirs()
     target = audio_path(aweme_id)
-    if target.exists() and target.stat().st_size > 10240 and not force:
-        return target
+    existing = audio_path_any(aweme_id)
+    if not force and existing.exists() and existing.stat().st_size > 10240:
+        return existing
     if force and target.exists():
         target.unlink()
 

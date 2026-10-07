@@ -116,6 +116,131 @@ def running(kind_prefix: str = "") -> Optional[dict]:
     return None
 
 
+# ---------- 音频体积 / 音质档位 ----------
+
+def _write_setting(key: str, value) -> None:
+    """面板改的运行时开关落 settings.json，下次进程起来还在"""
+    data = config._read_settings()
+    data[key] = value
+    config.SETTINGS_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2),
+                                    encoding="utf-8")
+
+
+def _audio_summary(conn) -> dict:
+    """
+    本地音频的体积账：现在多大、按当前档位全库多大、还有哪些能重编。
+    全库预估用 videos.duration_ms（采集时就有），所以还没下载的集也算得出来。
+    """
+    prof = config.audio_profile()
+    exts = {p["ext"] for p in config.AUDIO_PROFILES.values()}
+    total = 0
+    by_ext: dict[str, dict] = {}
+    for f in sorted(config.AUDIO_DIR.iterdir()):
+        if not f.is_file() or f.suffix.lstrip(".") not in exts or ".keep" in f.name:
+            continue
+        size = f.stat().st_size
+        total += size
+        d = by_ext.setdefault(f.suffix, {"count": 0, "bytes": 0})
+        d["count"] += 1
+        d["bytes"] += size
+
+    row = conn.execute("SELECT COUNT(*) n, COALESCE(SUM(duration_ms),0) dur,"
+                       " SUM(CASE WHEN audio_path LIKE '%.mp3' THEN 1 ELSE 0 END) legacy"
+                       " FROM videos").fetchone()
+    # 已下载音频的时长，用来算真实码率（全库时长只能用来做预估）
+    got = conn.execute("SELECT COALESCE(SUM(duration_ms),0) FROM videos"
+                       " WHERE audio_path IS NOT NULL AND audio_path != ''").fetchone()
+    downloaded_ms = int(got[0] or 0)
+    all_ms = int(row["dur"] or 0)
+    legacy = int(row["legacy"] or 0)
+
+    def kb_to_bytes(kbps: int) -> int:
+        return int(all_ms / 1000 * kbps * 1000 / 8)
+
+    cur_kbps = (round(total * 8 / (downloaded_ms / 1000) / 1000)
+                if downloaded_ms and total else 0)  # kbps，按已下载音频的真实时长
+    return {
+        "profile": prof["name"],
+        "label": prof["label"],
+        "kbps": prof["kbps"],
+        "ext": prof["ext"],
+        "profiles": [{"name": k, "label": v["label"],
+                      "short": v.get("short") or v["label"], "kbps": v["kbps"],
+                      "ext": v["ext"], "note": v["note"]}
+                     for k, v in config.AUDIO_PROFILES.items()],
+        "files": sum(v["count"] for v in by_ext.values()),
+        "bytes": total,
+        "by_ext": by_ext,
+        "episodes_total": int(row["n"] or 0),
+        "hours_total": round(all_ms / 3600000, 1),
+        "cur_kbps": cur_kbps,
+        "files_hours": round(downloaded_ms / 3600000, 1),
+        "avg_mb_now": round(total / max(sum(v["count"] for v in by_ext.values()), 1)
+                            / 1048576, 1),
+        "legacy_mp3": legacy,
+        # 全库按各档位预估（含还没下载的集）
+        "projection": {k: kb_to_bytes(v["kbps"])
+                       for k, v in config.AUDIO_PROFILES.items()},
+        "avg_mb_after": round(kb_to_bytes(prof["kbps"]) / max(row["n"] or 1, 1)
+                              / 1048576, 1),
+    }
+
+
+@app.post("/api/audio/profile")
+def api_audio_profile(body: dict = Body(...)):
+    name = (body.get("profile") or "").strip()
+    if name not in config.AUDIO_PROFILES:
+        raise HTTPException(400, f"没有这个档位: {name}")
+    config.AUDIO_PROFILE = name
+    _write_setting("audio_profile", name)
+    prof = config.audio_profile()
+    return {"ok": True, "profile": name, "label": prof["label"],
+            "ext": prof["ext"],
+            "message": (f"新增音频改用 {prof['label']}（.{prof['ext']}）。"
+                        f"存量文件点「瘦身存量」转换，不用重新下载")}
+
+
+@app.post("/api/audio/compact")
+def api_audio_compact(body: dict = Body(...)):
+    """存量音频原地重编瘦身；dry_run=true 只算账不动文件"""
+    import compress
+
+    profile = (body.get("profile") or config.AUDIO_PROFILE).strip()
+    if profile not in config.AUDIO_PROFILES:
+        raise HTTPException(400, f"没有这个档位: {profile}")
+    keep_source = bool(body.get("keep_source"))
+    column = body.get("column_id") or ""
+    limit = int(body.get("limit") or 0)
+    include_pub = bool(body.get("include_published"))
+
+    if body.get("dry_run"):
+        conn = db.connect()
+        try:
+            pr = compress.plan(conn, config.audio_profile(profile), column=column,
+                               limit=limit, include_published=include_pub)
+        finally:
+            conn.close()
+        return {"dry_run": True, "estimate": round(pr["est_saved"] / 1073741824, 2),
+                "count": pr["count"], "profile": pr["profile"],
+                "avg_before_mb": round(pr["avg_before"] / 1048576, 1),
+                "avg_after_mb": round(pr["avg_after"] / 1048576, 1)}
+
+    if running("compact"):
+        raise HTTPException(409, "瘦身任务正在跑，稍等")
+
+    def _run():
+        r = compress.run(profile=profile, limit=limit, column=column,
+                         keep_source=keep_source, workers=int(body.get("workers") or 4),
+                         include_published=include_pub, verbose=False)
+        return {**r, "_note": (f"瘦身 {r['converted']} 集："
+                               f"{r['before_gb']}GB → {r['after_gb']}GB，"
+                               f"省 {r['saved_gb']}GB"
+                               + (f"，失败 {r['fail_count']}" if r["fail_count"] else ""))}
+
+    job = spawn("compact", _run, note="按档位重编存量音频")
+    return {"job_id": job["id"]}
+
+
 # ---------- 概览 ----------
 
 @app.get("/api/overview")
@@ -135,6 +260,7 @@ def api_overview():
                 "process": processor.CURRENT.snapshot(),
                 "engine": config.SCAN_ENGINE, "port": config.PANEL_PORT,
                 "cos": bool(__import__("os").environ.get("COS_SECRET_ID")),
+                "audio": _audio_summary(conn),
                 "server_time": db.now()}
     finally:
         conn.close()
@@ -598,12 +724,14 @@ def api_export(body: dict = Body(...)):
 
 # ---------- 本地文件 ----------
 
-@app.get("/media/audio")
+@app.api_route("/media/audio", methods=["GET", "HEAD"])
 def media_audio(aweme_id: str):
-    path = (config.AUDIO_DIR / f"{aweme_id}.mp3").resolve()
+    import media
+    path = media.audio_path_any(aweme_id).resolve()
     if not path.exists() or config.AUDIO_DIR.resolve() not in path.parents:
         raise HTTPException(404, "音频不存在")
-    return FileResponse(path, media_type="audio/mpeg")
+    # Range 交给 Starlette FileResponse；m4a 的 MIME 必须给对，iOS 才肯播
+    return FileResponse(path, media_type=media.media_type(path))
 
 
 @app.get("/media/article")

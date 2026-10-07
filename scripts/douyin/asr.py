@@ -110,8 +110,9 @@ def _public_url(aweme_id: str, mp3: Path) -> tuple[str, bool]:
             from uploader import CosUploader
 
             up = CosUploader()
-            key = f"{config.COS_AUDIO_PREFIX}/asr/{aweme_id}.mp3"
-            if up.upload_file(mp3, key):
+            key = f"{config.COS_AUDIO_PREFIX}/asr/{aweme_id}{mp3.suffix}"
+            import media as _media
+            if up.upload_file(mp3, key, content_type=_media.media_type(mp3)):
                 return (f"https://{config.COS_BUCKET}.cos.{config.COS_REGION}"
                         f".myqcloud.com/{key}", False)
         except Exception as e:  # noqa: BLE001
@@ -276,7 +277,8 @@ if __name__ == "__main__":
     ap.add_argument("--force", action="store_true")
     args = ap.parse_args()
     config.ensure_dirs()
+    import media
     print(json.dumps(ensure_transcript(args.aweme_id,
-                                       config.AUDIO_DIR / f"{args.aweme_id}.mp3",
+                                       media.audio_path_any(args.aweme_id),
                                        force=args.force),
                      ensure_ascii=False, indent=2))

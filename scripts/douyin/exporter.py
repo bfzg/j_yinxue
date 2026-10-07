@@ -1,7 +1,8 @@
 """
 导出与发布
 
-publish_one：把 mp3 + 文章正文推到 COS，作品阶段变 published
+publish_one：把音频 + 文章正文推到 COS，作品阶段变 published
+音频扩展名跟 config.AUDIO_PROFILE 走（默认 .m4a），COS 键名与 ContentType 同步
 export_all：sqlite → src/static/data/{articles.json, playlist.json, columns.json}
 
 导出按 id upsert，绝不无脑 append（旧 uploader 每跑一次就多塞一条重复记录，
@@ -18,6 +19,7 @@ from typing import Optional
 
 sys.path.insert(0, str(Path(__file__).parent))
 import config
+import media
 import pipeline_db as db
 
 _APP = {"name": "九哥隐学", "author": "九哥", "cover": "",
@@ -106,7 +108,9 @@ def publish_one(conn, aweme_id: str, verbose: bool = True) -> dict:
         raise ValueError(f"数据库里没有这条作品: {aweme_id}")
     if not v.get("article_path") or not Path(v["article_path"]).exists():
         raise RuntimeError("还没有生成文章，先跑 article 步骤")
-    audio = Path(v.get("audio_path") or (config.AUDIO_DIR / f"{aweme_id}.mp3"))
+    audio = Path(v.get("audio_path") or "")
+    if not audio.exists():
+        audio = media.audio_path_any(aweme_id)
     if not audio.exists():
         raise RuntimeError(f"音频文件不存在: {audio}")
 
@@ -121,11 +125,12 @@ def publish_one(conn, aweme_id: str, verbose: bool = True) -> dict:
     ep = int(v.get("episode_no") or 0)
     stem = f"ep{ep}_{aweme_id}" if ep else aweme_id
 
-    audio_key = f"{config.COS_AUDIO_PREFIX}/{account_slug}/{col_slug}/{stem}.mp3"
+    audio_key = (f"{config.COS_AUDIO_PREFIX}/{account_slug}/{col_slug}"
+                 f"/{stem}{audio.suffix}")
     text_key = f"{config.COS_TXT_PREFIX}/{account_slug}/{col_slug}/{stem}.txt"
 
     up = CosUploader()
-    if not up.upload_file(audio, audio_key):
+    if not up.upload_file(audio, audio_key, content_type=media.media_type(audio)):
         raise RuntimeError("音频上传 COS 失败")
     tmp_txt = config.OUTPUT_DIR / "tmp" / f"{stem}.txt"
     tmp_txt.parent.mkdir(parents=True, exist_ok=True)

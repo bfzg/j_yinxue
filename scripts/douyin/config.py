@@ -19,6 +19,9 @@ COOKIE_FILE = BASE_DIR / "cookie.txt"
 # 账号配置（多账号 + 每账号抓取数量上限，面板可视化编辑）
 ACCOUNTS_FILE = BASE_DIR / "accounts.json"
 
+# 面板运行时开关
+SETTINGS_FILE = BASE_DIR / "settings.json"
+
 # 流程唯一真源数据库
 DB_DIR = BASE_DIR / "db"
 DB_FILE = DB_DIR / "pipeline.sqlite"
@@ -41,6 +44,94 @@ DOWNLOAD_QUALITY = "720p"  # 视频质量: 360p / 540p / 720p / 1080p
 # 音频提取配置
 MP3_QUALITY = 2            # ffmpeg -q:a 参数 (0=最高, 9=最低, 2=高质量约190kbps)
 DELETE_VIDEO_AFTER_EXTRACT = True  # 提取音频后删除视频文件
+
+# ===== 音频落库格式 =====
+# 实测基准：原来的双声道 165kbps MP3，每集平均 21MB、每小时 74MB。
+# 纯语音内容降到单声道 AAC 40kbps 听不出区别，体积只剩四分之一。
+# 改这里（或面板「音频体积」卡下拉）只对新增生效，
+# 存量文件用 scripts/douyin/compress.py 原地转，不用重新下载。
+def _read_settings() -> dict:
+    """settings.json 存面板可改的运行时开关，缺文件按默认值跑"""
+    import json
+
+    f = SETTINGS_FILE
+    if not f.exists():
+        return {}
+    try:
+        data = json.loads(f.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+AUDIO_PROFILES = {
+    "aac40_mono": {
+        "label": "AAC 40k 单声道（推荐）",
+        "short": "AAC 40k 单声道",
+        "ext": "m4a",
+        "media_type": "audio/mp4",
+        "ffmpeg": ["-ac", "1", "-ar", "32000", "-c:a", "aac", "-b:a", "40k",
+                   "-movflags", "+faststart"],
+        "kbps": 41,
+        "note": "体积 1/4，语音几乎无损，小程序/H5 通吃",
+    },
+    "aac48_mono": {
+        "label": "AAC 48k 单声道 44.1kHz",
+        "short": "AAC 48k 单声道",
+        "ext": "m4a",
+        "media_type": "audio/mp4",
+        "ffmpeg": ["-ac", "1", "-ar", "44100", "-c:a", "aac", "-b:a", "48k",
+                   "-movflags", "+faststart"],
+        "kbps": 50,
+        "note": "比 40k 多一点高频余量，体积 2/7",
+    },
+    "aac32_mono": {
+        "label": "AAC 32k 单声道 24kHz（最省）",
+        "short": "AAC 32k 单声道",
+        "ext": "m4a",
+        "media_type": "audio/mp4",
+        "ffmpeg": ["-ac", "1", "-ar", "24000", "-c:a", "aac", "-b:a", "32k",
+                   "-movflags", "+faststart"],
+        "kbps": 33,
+        "note": "体积 1/5，气音略闷，长串讲够用",
+    },
+    "mp3_96_mono": {
+        "label": "MP3 96k 单声道",
+        "short": "MP3 96k 单声道",
+        "ext": "mp3",
+        "media_type": "audio/mpeg",
+        "ffmpeg": ["-ac", "1", "-ar", "44100", "-c:a", "libmp3lame", "-b:a", "96k"],
+        "kbps": 96,
+        "note": "想保持 .mp3 容器时用这个，体积约 4/7",
+    },
+    "mp3_stereo": {
+        "label": "MP3 -q:a 2 双声道（原状）",
+        "short": "MP3 双声道（原状）",
+        "ext": "mp3",
+        "media_type": "audio/mpeg",
+        "ffmpeg": ["-c:a", "libmp3lame", "-q:a", str(MP3_QUALITY)],
+        "kbps": 165,
+        "note": "改造前的基准，体积最大，只用于回滚",
+    },
+}
+AUDIO_PROFILE_DEFAULT = "aac40_mono"
+AUDIO_PROFILE = (os.getenv("DY_AUDIO_PROFILE", "")
+                 or _read_settings().get("audio_profile", "")
+                 or AUDIO_PROFILE_DEFAULT)
+if AUDIO_PROFILE not in AUDIO_PROFILES:
+    AUDIO_PROFILE = AUDIO_PROFILE_DEFAULT
+
+
+def audio_profile(name: str = "") -> dict:
+    """取当前（或指定）音频档位，附带 name 方便写进日志"""
+    key = name or AUDIO_PROFILE
+    prof = dict(AUDIO_PROFILES.get(key) or AUDIO_PROFILES[AUDIO_PROFILE_DEFAULT])
+    prof["name"] = key if key in AUDIO_PROFILES else AUDIO_PROFILE_DEFAULT
+    return prof
+
+
+# 存量转码时是否保留原来的大文件（面板勾选框控制）
+COMPRESS_KEEP_SOURCE = False
 
 # 抓取与下载行为
 PAGE_DELAY = 2.5           # 主页翻页间隔（秒），防风控

@@ -433,11 +433,74 @@ async function loadLog() {
     || '<div>暂无日志</div>';
 }
 
+/* ---------- 音频体积 ---------- */
+function fmtBytes(n) {
+  n = n || 0;
+  return n >= 1073741824 ? (n / 1073741824).toFixed(2) + ' GB'
+    : n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB'
+      : Math.round(n / 1024) + ' KB';
+}
+
+const _abox = (k, v, sub) => `<div style="flex:1 1 118px;border:1px solid var(--line);border-radius:6px;padding:7px 9px">
+  <div style="font-size:11px;color:var(--ink3)">${k}</div>
+  <div style="font-size:15px;font-weight:600;font-variant-numeric:tabular-nums">${v}</div>
+  <div style="font-size:11px;color:var(--ink3)">${sub || ''}</div></div>`;
+
+function renderAudio(ov) {
+  const a = ov.audio;
+  if (!a) return;
+  const max = Math.max(...Object.values(a.projection), 1);
+  // 基准取改造前的双声道 MP3，"相对现状"就是各档位占原体积的比例
+  const baseGB = (a.projection.mp3_stereo || max) / 1073741824;
+  const now = a.bytes || 0;
+  const light = $('#audioLight');
+  const gap = a.cur_kbps && a.kbps ? a.cur_kbps - a.kbps : 0;
+  light.className = 'light ' + (a.legacy_mp3 ? 'warn' : 'ok');
+  light.querySelector('.t1').textContent = a.legacy_mp3
+    ? `${a.legacy_mp3} 集还是双声道 MP3，点「瘦身存量」转成当前档位`
+    : `全部音频已在 ${a.label || a.profile} 档位`;
+  light.querySelector('.t2').textContent = a.legacy_mp3
+    ? `按当前档位转完，本地 ${fmtBytes(now)} 约能降到 ${fmtBytes(Math.round(now * (a.kbps / a.cur_kbps) || 0))}`
+    : `新增音频继续按这个档位落库`;
+
+  $('#audioStats').innerHTML = [
+    _abox('本地已落库', `${a.files} 集`, fmtBytes(now)),
+    _abox('平均每集', a.files ? fmtBytes(Math.round(now / a.files)) : '-', `${a.episodes_total} 集总数`),
+    _abox('全库时长', `${a.hours_total} 小时`,
+      `已下载 ${a.files_hours || 0} 小时 · 当前 ${a.cur_kbps} kbps`),
+    _abox('全库预估', fmtBytes(a.projection[a.profile] || 0), `按 ${a.label || a.profile}`),
+  ].join('');
+
+  const sel = $('#audioProfile');
+  const sig = a.profiles.map((x) => x.name).join(',');
+  if (sel.dataset.sig !== sig) {
+    sel.innerHTML = a.profiles.map((x) =>
+      `<option value="${x.name}">${esc(x.label)} · ${x.kbps}kbps · .${x.ext}</option>`).join('');
+    sel.dataset.sig = sig;
+  }
+  if (document.activeElement !== sel) sel.value = a.profile;
+
+  $('#audioTable').innerHTML = `<tr><th>档位</th><th style="width:112px">全库预估</th><th style="width:62px">相对现状</th></tr>` +
+    a.profiles.map((x) => {
+      const gb = (a.projection[x.name] || 0) / 1073741824;
+      const pct = Math.max(2, Math.round(gb / baseGB * 100));
+      const on = x.name === a.profile;
+      return `<tr${on ? ' style="background:var(--hover,#eef0f2)"' : ''}>
+        <td class="t" title="${esc(x.note)}">${on ? '● ' : '○ '}${esc(x.short || x.label)}
+          <span style="color:var(--ink3)">${x.kbps}k</span></td>
+        <td class="num">${gb.toFixed(2)} GB
+          <div style="height:3px;background:var(--line2);border-radius:2px;margin-top:4px;overflow:hidden">
+            <i style="display:block;height:100%;width:${pct}%;background:${on ? 'var(--ok)' : 'var(--ink3)'}"></i></div></td>
+        <td class="num">${Math.round(gb / baseGB * 100)}%</td></tr>`;
+    }).join('');
+}
+
 /* ---------- 轮询 ---------- */
 async function refresh(full = true) {
   const ov = await api('/api/overview');
   S.accounts = ov.accounts; S.columns = ov.columns; S.jobs = ov.jobs; S.overview = ov;
   renderChips(ov.stats); renderState(ov); renderCookie(ov); renderAccounts(); renderJobs();
+  if (S.view === 'audio') renderAudio(ov);
   if (full && S.view === 'queue') loadQueue();
   if (full && S.view === 'columns') renderColumns();
   const running = (ov.jobs || []).some((j) => j.status === 'running') || (ov.process || {}).running;
@@ -564,6 +627,36 @@ $('#btnExportDraft').onclick = () => guard(async () => {
   toast(`已导出预览数据（含未发布）：${r.articles} 条`, 'ok');
 });
 $('#btnLogReload').onclick = () => loadLog().catch(() => {});
+$('#btnAudioSave').onclick = () => guard(async () => {
+  $('#btnAudioSave').disabled = true;
+  try {
+    const r = await api('/api/audio/profile', { method: 'POST', body: { profile: $('#audioProfile').value } });
+    toast(r.message, 'ok'); refresh();
+  } finally { $('#btnAudioSave').disabled = false; }
+});
+$('#btnAudioEstimate').onclick = () => guard(async () => {
+  $('#btnAudioEstimate').disabled = true;
+  try {
+    const r = await api('/api/audio/compact', {
+      method: 'POST',
+      body: { dry_run: true, profile: $('#audioProfile').value, include_published: $('#audioPub').checked },
+    });
+    toast(`待转 ${r.count} 集：${r.avg_before_mb} MB/集 → 约 ${r.avg_after_mb} MB/集，预计省 ${r.estimate} GB`, 'ok');
+  } finally { $('#btnAudioEstimate').disabled = false; }
+});
+$('#btnAudioCompact').onclick = () => guard(async () => {
+  $('#btnAudioCompact').disabled = true;
+  try {
+    const r = await api('/api/audio/compact', {
+      method: 'POST',
+      body: { profile: $('#audioProfile').value, keep_source: $('#audioKeep').checked,
+              include_published: $('#audioPub').checked, workers: 4 },
+    });
+    toast('瘦身任务已开始，进度看「任务」列表', 'ok');
+    setTimeout(() => refresh(), 4000);
+  } finally { setTimeout(() => { $('#btnAudioCompact').disabled = false; }, 3000); }
+});
+
 $$('.tabs button').forEach((b) => { b.onclick = () => showView(b.dataset.view); });
 $('#btnAddOpen').onclick = () => $('#mAdd').classList.add('on');
 $$('#mAdd [data-close],#mAdd .ft .btn').forEach((b) => {

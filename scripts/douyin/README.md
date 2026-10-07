@@ -4,7 +4,7 @@
 最后导出成前端（uni-app）直接读的 json。
 
 ```
-账号主页 ──采集元数据──▶ sqlite ──下载音频流──▶ mp3 ──语音转写──▶ 全文 ──通义千问──▶ 排版文章
+账号主页 ──采集元数据──▶ sqlite ──下载音频流──▶ m4a ──语音转写──▶ 全文 ──通义千问──▶ 排版文章
                           │                                                    │
                           └──────────── 按合集/标题正则自动分栏目 ◀────────────
                                               │
@@ -49,15 +49,16 @@ cd /Volumes/cc/code/j_yinxue/scripts/douyin
 .venv/bin/python run.py panel      # http://127.0.0.1:8766
 ```
 
-一屏五件事：
+一屏六件事：
 
 1. **登录态 / Cookie** —— 扫码登录、翻页体检、粘贴 Cookie 并热注入 Chrome、「释放浏览器」（清掉占死配置目录的残留进程）。
 2. **账号** —— 添加/删除账号、每个账号单独设抓取上限、一键采集全部。
 3. **作品队列** —— 筛选、勾选、单条重跑、批量处理，点开看文章正文和播放器。顶栏「全部待处理」把所有还没成文的作品一次排进队列（旁边的小圆标就是待处理条数），跑的过程中可随时点「停止」。
 4. **栏目** —— 自动归栏、改名、锁定（锁定的栏目不再被自动规则覆盖）、新建手工栏目。
 5. **发布 / 导出** —— 上传 COS、重建前端 json；「日志」页看实时输出，处理进度、耗时、失败原因都在顶栏。
+6. **音频体积** —— 选落库档位（AAC 单声道 32k/40k/48k、MP3 96k、原状），看全库预估，一键把存量音频原地重编瘦身，不用重新下载（见第七节）。
 
-面板只监听 `127.0.0.1`，本机自用；`/media/*` 路由放开了跨域，方便前端本地预览（见第七节）。
+面板只监听 `127.0.0.1`，本机自用；`/media/*` 路由放开了跨域，方便前端本地预览（见第六节）。
 
 ---
 
@@ -95,7 +96,7 @@ cd /Volumes/cc/code/j_yinxue/scripts/douyin
 | `SCAN_IDLE_LIMIT` / `SCAN_DEADLINE_MIN` | `12` / `40` | 浏览器采集「连续多少轮无新增算到底」和单账号最长分钟数 |
 | `BAILIAN_MODEL` | `qwen-plus` | 文章生成模型 |
 | `ASR_BACKEND` | `auto` | `file` 只用 paraformer-v2，`auto` 失败退回 realtime |
-| `MP3_QUALITY` | `2` | ffmpeg `-q:a`，0 最好、9 最差，2 ≈ 190kbps |
+| `DY_AUDIO_PROFILE` | `aac40_mono` | 音频档位，取值见第七节档位表（也可写进 `settings.json`）；旧名 `MP3_QUALITY` 只在 `mp3_stereo` 档生效 |
 | `DY_LOCAL_MEDIA_BASE` | `http://127.0.0.1:8766` | 本地预览导出时写进 json 的音视频/正文基址 |
 
 ---
@@ -145,13 +146,55 @@ DY_LOCAL_MEDIA_BASE=http://192.168.1.20:8766 .venv/bin/python run.py export --al
 > 本地直链只能在开发者工具里勾掉「不校验合法域名」时用；正式上线必须先
 > `publish`，再把 COS 域名加进小程序后台的 request / downloadFile 白名单。
 
-## 七、产物
+## 七、音频体积：档位与存量瘦身
+
+抖音给的是双声道音频流，照原样落库每集约 21MB，1023 集全量约 20GB。纯语音没必要
+双声道，也没必要 160kbps，本地 ffmpeg 重编成单声道 AAC 就只剩四分之一，**不用重新下载**。
+
+全库 276.5 小时在各档位下的体积（面板「音频体积」页能看到同一张表）：
+
+| 档位 | 容器 | 码率 | 全库预估 | 平均每集 | 说明 |
+| --- | --- | --- | --- | --- | --- |
+| `aac40_mono`（默认） | .m4a | 41kbps | 4.8GB | 4.8MB | 语音几乎无损，小程序/H5/iOS 通吃，推荐 |
+| `aac48_mono` | .m4a | 50kbps | 5.8GB | 5.7MB | 多留一点高频余量 |
+| `aac32_mono` | .m4a | 33kbps | 3.8GB | 3.8MB | 最省，气音略闷，长篇讲述够用 |
+| `mp3_96_mono` | .mp3 | 96kbps | 11.1GB | 10.9MB | 非要 .mp3 容器时用这个 |
+| `mp3_stereo` | .mp3 | 146kbps | 19.1GB | 18.7MB | 改造前的原状，只用于回滚 |
+
+为什么不用更小的 opus（同音质还能再省两成）：微信小程序的 `audio` /
+`InnerAudioContext` 不支持 opus/ogg，播不出来。`compress.py` 对 `ogg`/`opus` 容器做了
+硬性拒绝。采样率最低只到 24kHz —— 实测 16kHz 时 6kHz 以上能量掉 4.6dB，人声明显发闷；
+24kHz 只丢 11kHz 以后的空气感尾巴，32kHz 与 44.1kHz 的差异在 0.6dB 以内，听不出。
+
+用法：
+
+```bash
+.venv/bin/python compress.py --dry-run              # 先看账，不动文件
+.venv/bin/python compress.py --workers 4            # 全量瘦身，约十几分钟
+.venv/bin/python compress.py --profile aac32_mono   # 换档位
+.venv/bin/python compress.py --column <column_id>   # 只转某个栏目
+.venv/bin/python compress.py --keep-source          # 保留原来的大 mp3
+```
+
+安全边界：已经是目标档位且码率不超过目标 1.3 倍的直接跳过，重复跑没有副作用；先写
+`output/tmp/compact`，校验时长差 <2.5 秒且确实变小才替换原文件并回写 `audio_path`
+（只改 `audio_path`，不动 `stage`/`error`/`updated_at`，面板排序不会乱）。已 `published`
+的条目默认不动，要一起转加 `--include-published`，转完重发一次让 COS 直链指到新文件。
+
+面板「音频体积」页：下拉切档位（写 `settings.json`，只影响**以后新增**的音频）、
+「只算账」（dry run）、「瘦身存量」（`/api/audio/compact`，进度在任务表里看）。
+`/media/audio` 和 COS 上传都按真实后缀给 `Content-Type`，`.m4a` 必须回 `audio/mp4`，
+否则 iOS / 微信 H5 会拒绝播放。
+
+---
+
+## 八、产物
 
 | 位置 | 内容 |
 | --- | --- |
 | `db/pipeline.sqlite` | 唯一真源：账号、作品、栏目、文章、事件日志 |
 | 每次运行的输出 | 末尾打印本次百炼花费（`llm.py` 的 `USAGE` 只在进程内累计，不落库） |
-| `output/audio/<aweme_id>.mp3` | 抽出来的音频，直接给前端播放器用 |
+| `output/audio/<aweme_id>.m4a` | 抽出来并按档位压好的音频，直接给前端播放器用 |
 | `output/subtitles/<aweme_id>.json` | 转写全文 + 时间戳 |
 | `output/articles/<aweme_id>.md` | 排版好的文章（标题/导语/小标题/本期要点/值得记住的一句/尾部元信息） |
 | `src/static/data/*.json` | 前端读的 `articles.json` / `playlist.json` / `columns.json` |
@@ -160,7 +203,7 @@ DY_LOCAL_MEDIA_BASE=http://192.168.1.20:8766 .venv/bin/python run.py export --al
 
 ---
 
-## 八、已知限制与风险
+## 九、已知限制与风险
 
 - **主页作品列表接口现在必须登录**。未登录时 `aweme/post` 会返回 200 + 空 body（不是报错，是静默降级），所以「采全量」这一步一定要扫码。单作品详情接口匿名可用，已入库的作品不受影响。
 - **直链几分钟就 403**，所以下载前一定重新取一次，不要复用列表页里的链接。
@@ -171,7 +214,7 @@ DY_LOCAL_MEDIA_BASE=http://192.168.1.20:8766 .venv/bin/python run.py export --al
 - `paraformer-realtime-v2` 兜底时偶发 `websocket close`，已改成每段最多重试 3 次。批量跑完如果还有 failed，`run.py process --stage failed` 重跑一遍就行。
 - 图文作品（`kind='image_text'`）不进处理队列，这条流水线只处理视频。
 
-## 九、以后要接自定义音色（TTS）
+## 十、以后要接自定义音色（TTS）
 
 现在只做「视频 → 音频 + 文章」，音色是抖音原声。要换成你自己的声音，链路已经留好了口子：
 

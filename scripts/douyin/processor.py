@@ -153,8 +153,9 @@ def process_one(conn, aweme_id: str, steps: list = None, force: bool = False,
                 out["steps"]["audio"] = {"path": str(path), "size_kb":
                                          round(path.stat().st_size / 1024)}
             elif step == "transcript":
-                audio = Path(v.get("audio_path")
-                             or config.AUDIO_DIR / f"{aweme_id}.mp3")
+                audio = (Path(v["audio_path"]) if v.get("audio_path")
+                                  and Path(v["audio_path"]).exists()
+                         else media.audio_path_any(aweme_id))
                 res = asr.ensure_transcript(aweme_id, audio, force=force)
                 db.set_stage(conn, aweme_id, "transcript",
                              transcript_path=res["text_path"],

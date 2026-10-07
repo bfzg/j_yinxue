@@ -1,5 +1,8 @@
 """
-音频提取模块 - 使用 ffmpeg 从视频中提取音频为 MP3
+音频提取模块 - 使用 ffmpeg 从视频中提取音频
+
+输出格式由 config.audio_profile() 决定（默认单声道 AAC 40kbps 的 .m4a），
+原来那份双声道 165kbps MP3 对应档位 mp3_stereo，改配置即可回滚。
 """
 import subprocess
 import os
@@ -7,20 +10,26 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+sys.path.insert(0, str(Path(__file__).parent))
+import config
+
 
 class AudioExtractor:
-    """从视频中提取音频，输出 MP3 文件"""
+    """从视频中提取音频，按档位输出压缩后的音频文件"""
 
     def __init__(self, mp3_quality: int = 2, delete_video: bool = True,
-                 loudnorm: bool = True, target_lufs: float = -14.0):
+                 loudnorm: bool = True, target_lufs: float = -14.0,
+                 profile: Optional[dict] = None):
         """
         Args:
-            mp3_quality: ffmpeg -q:a 参数 (0=最高 9=最低, 2=高质量约190kbps)
+            mp3_quality: 兼容旧调用，仅在 profile=None 时用 -q:a 出双声道 MP3
             delete_video: 提取完成后是否删除视频文件
             loudnorm: 是否启用 loudnorm 音量标准化 (推荐 True)
             target_lufs: 目标响度 (LUFS), 播客推荐 -16~-14, 默认 -14
+            profile: config.audio_profile() 的档位字典，None 则读当前配置
         """
         self.mp3_quality = mp3_quality
+        self.profile = profile or config.audio_profile()
         self.delete_video = delete_video
         self.loudnorm = loudnorm
         self.target_lufs = target_lufs
@@ -61,8 +70,8 @@ class AudioExtractor:
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        # 输出文件名与视频同名，扩展名改为 .mp3
-        mp3_path = output_dir / (video_path.stem + ".mp3")
+        # 输出文件名与视频同名，扩展名跟档位走
+        mp3_path = output_dir / (video_path.stem + "." + self.profile["ext"])
 
         if mp3_path.exists():
             print(f"  [跳过] 音频已存在: {mp3_path.name}")
@@ -74,23 +83,17 @@ class AudioExtractor:
             print(f"  [错误] 视频文件不存在: {video_path}")
             return None
 
-        # ffmpeg 命令: 去掉视频画面，只提取音频，编码为 MP3
-        cmd = [
-            self._ffmpeg_path,
-            "-i", str(video_path),        # 输入文件
-            "-vn",                         # 去掉视频画面
-            "-acodec", "libmp3lame",       # MP3 编码器
-        ]
+        # ffmpeg 命令: 去掉视频画面，按档位重编音频
+        cmd = [self._ffmpeg_path, "-i", str(video_path), "-vn"]
 
         # 音量标准化 (loudnorm): 提升音量到播客标准
         if self.loudnorm:
             cmd.extend(["-af", f"loudnorm=I={self.target_lufs}:TP=-1.5:LRA=11"])
 
-        cmd.extend([
-            "-q:a", str(self.mp3_quality), # 音频质量
-            "-y",                          # 覆盖已存在文件
-            str(mp3_path)
-        ])
+        codec_args = self.profile.get("ffmpeg") or [
+            "-c:a", "libmp3lame", "-q:a", str(self.mp3_quality)]
+        cmd.extend(codec_args)
+        cmd.extend(["-y", str(mp3_path)])   # -y 覆盖已存在文件
 
         print(f"  [提取] {video_path.name} → {mp3_path.name}")
 

@@ -34,9 +34,19 @@
           "duration": 2185,
           "publishedAt": "2026-09-28",
           "summary": "正史称朱棣为马皇后所生，但野史与史料矛盾暗示其生母实为一位无名蒙古女子。这一真相被永乐帝终生隐瞒。"
+        },
+        {
+          "awemeId": "7689797410809236587",
+          "title": "初封燕王：朱棣命运的第一个转折",
+          "episodeNo": 3,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7689797410809236587",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7689797410809236587",
+          "duration": 2191,
+          "publishedAt": "2026-09-29",
+          "summary": "洪武三年，朱元璋分封诸子为藩王，朱棣受封燕王，获北平封地。这一安排既为镇守边疆，也为取代功臣，却埋下靖难之变的伏笔。"
         }
       ],
-      "nEpisodes": 2
+      "nEpisodes": 3
     },
     {
       "id": "col-c5826e",
@@ -367,18 +377,72 @@
       "nEpisodes": 9
     },
     {
-      "id": "col-f601b0",
-      "name": "人生修行法则",
+      "id": "col-a31bc2",
+      "name": "三魂七魄",
+      "accountId": "tianya-shentie",
+      "accountName": "天涯神贴隐学",
+      "cover": "https://p9-pc-sign.douyinpic.com/tos-cn-i-dy/d96b0a096920423dac23a6038ce5a32e~tplv-dy-cropcenter:323:430.jpeg?lk3s=138a59ce&x-expires=2106583200&x-signature=VTp%2BEsh7d1TLtoHZi54Zpx8nRK4%3D&from=327834062&s=PackSourceEnum_PUBLISH&se=true&sh=323_430&sc=cover&biz_tag=pcweb_cover&l=202610060247149819FF42229EE80CAF67",
+      "sort": 0,
+      "episodeTotal": 3,
+      "episodes": [
+        {
+          "awemeId": "7682435684845604134",
+          "title": "详解三魂七魄：你不是一个人，而是十个住户的临时合租",
+          "episodeNo": 1,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7682435684845604134",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7682435684845604134",
+          "duration": 569,
+          "publishedAt": "2026-09-06",
+          "summary": "道教1500年前提出“三魂七魄”说——你并非单一主体，而是十个独立功能单元共居一身。本文不谈迷信，只讲文化逻辑与身心结构。"
+        },
+        {
+          "awemeId": "7682787622229396777",
+          "title": "观落阴：民间传说中的探阴术全解析",
+          "episodeNo": 2,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7682787622229396777",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7682787622229396777",
+          "duration": 145,
+          "publishedAt": "2026-09-08",
+          "summary": "道门神秘的观落阴仪式，真能让人魂入地府见故人？本文梳理其起源、流程与禁忌，纯属民俗奇谈，理性看待。"
+        }
+      ],
+      "nEpisodes": 2
+    },
+    {
+      "id": "col-b8dfb5",
+      "name": "中东局势分析",
+      "accountId": "tianya-shentie",
+      "accountName": "天涯神贴隐学",
+      "cover": "https://p3-pc-sign.douyinpic.com/tos-cn-i-dy/1ec6ff8749f245c8a10dd490d4137758~tplv-dy-cropcenter:323:430.jpeg?lk3s=138a59ce&x-expires=2106583200&x-signature=efw9pNOb8P3af%2FvFsUWpR7D6w5E%3D&from=327834062&s=PackSourceEnum_PUBLISH&se=true&sh=323_430&sc=cover&biz_tag=pcweb_cover&l=202610060247149819FF42229EE80CAF67",
+      "sort": 0,
+      "episodeTotal": 3,
+      "episodes": [
+        {
+          "awemeId": "7685708292101852426",
+          "title": "伊朗胡塞联手封喉沙特：十天改写中东海权格局",
+          "episodeNo": 1,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685708292101852426",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685708292101852426",
+          "duration": 424,
+          "publishedAt": "2026-09-16",
+          "summary": "胡塞武装十天攻占7000平方公里，掌控曼德海峡；伊朗扼守霍尔木兹海峡——沙特两条石油命脉被伊朗阵营 simultaneous 按住。"
+        }
+      ],
+      "nEpisodes": 1
+    },
+    {
+      "id": "col-a3b562",
+      "name": "人性与处世",
       "accountId": "tiandao-kaiwu",
       "accountName": "天道开悟录",
       "cover": "https://p3-pc-sign.douyinpic.com/tos-cn-i-0813c000-ce/oIFMAv7bhFFAyB7AIVEDlefKQAo7gfuQJQvq57~tplv-dy-cropcenter:323:430.jpeg?lk3s=138a59ce&x-expires=2106583200&x-signature=CHelzsEf9fKn62SNo66qR%2BO3QBE%3D&from=327834062&s=PackSourceEnum_PUBLISH&se=true&sh=323_430&sc=cover&biz_tag=pcweb_cover&l=2026100602472068B8C451EB1DEB51D549",
       "sort": 0,
-      "episodeTotal": 8,
+      "episodeTotal": 7,
       "episodes": [
         {
           "awemeId": "7689861481387008369",
           "title": "精神供养：让一群人为你卖命",
-          "episodeNo": 1,
+          "episodeNo": 2,
           "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7689861481387008369",
           "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7689861481387008369",
           "duration": 283,
@@ -386,77 +450,91 @@
           "summary": "忠诚无法靠金钱收买或权力压制，真正的死忠源于四层精神供养：极致容错、绝对公平、深度懂得、逆境定力。"
         },
         {
-          "awemeId": "7685393631818279867",
-          "title": "天道忌满，人生莫求十全",
-          "episodeNo": 2,
-          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685393631818279867",
-          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685393631818279867",
-          "duration": 357,
-          "publishedAt": "2026-09-14",
-          "summary": "天道从不允诺圆满，得到与失去如影随形。真正的福气不在极盛，而在知止、守中、厚德载物。"
-        },
-        {
-          "awemeId": "7685020469468621169",
-          "title": "一定要远离业力很深的人",
+          "awemeId": "7689847148443462522",
+          "title": "新官上任：四步建立真实威慑力",
           "episodeNo": 3,
-          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685020469468621169",
-          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685020469468621169",
-          "duration": 375,
-          "publishedAt": "2026-09-13",
-          "summary": "业力不是迷信，而是代际创伤的生理烙印与心理惯性。破除它只需三步：觉察冻结、逆向选择、意义锚点重塑。"
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7689847148443462522",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7689847148443462522",
+          "duration": 352,
+          "publishedAt": "2026-09-26",
+          "summary": "新领导坐不稳？张居正三个月驯服万历朝的用人铁律，直击职场权力本质。"
         },
         {
-          "awemeId": "7682411036079990649",
-          "title": "凡是负能量的东西，千万不要去回应",
+          "awemeId": "7677245475720102897",
+          "title": "命运的漏洞就是不能过于兴奋",
           "episodeNo": 4,
-          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7682411036079990649",
-          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7682411036079990649",
-          "duration": 318,
-          "publishedAt": "2026-09-06",
-          "summary": "不争不是软弱，而是顺应规律的顶级智慧。不与消耗你的人事纠缠，是对自己最深的保护。"
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7677245475720102897",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7677245475720102897",
+          "duration": 295,
+          "publishedAt": "2026-08-23",
+          "summary": "老子说“宠辱若惊”，过度兴奋会触发命运的平衡法则。隐藏情绪、向命运撒谎、保持谦虚，才是与天道共舞的生存智慧。"
         },
         {
-          "awemeId": "7682061022824717243",
-          "title": "如何科学地提升运气",
+          "awemeId": "7676306524687751611",
+          "title": "接纳来去离合，守住内心绝对主动权",
           "episodeNo": 5,
-          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7682061022824717243",
-          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7682061022824717243",
-          "duration": 289,
-          "publishedAt": "2026-09-05",
-          "summary": "运气不是天注定的盲盒，而是一门可修炼的技术。本文拆解运气的底层逻辑，教你用松弛、敬畏与利他，主动造运。"
-        },
-        {
-          "awemeId": "7680566601271829691",
-          "title": "在黑白之间，走出自己的方向",
-          "episodeNo": 6,
-          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7680566601271829691",
-          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7680566601271829691",
-          "duration": 300,
-          "publishedAt": "2026-09-01",
-          "summary": "社会化程度越高，越能接纳世界的灰度。接受灰度不是妥协，而是清醒认知人性与现实的复杂，在矛盾中守住底线、锚定方向。"
-        },
-        {
-          "awemeId": "7680305405751189625",
-          "title": "低谷不是深渊，是重塑内核的起点",
-          "episodeNo": 7,
-          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7680305405751189625",
-          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7680305405751189625",
-          "duration": 381,
-          "publishedAt": "2026-09-01",
-          "summary": "真正觉醒从不是被点醒，而是被生活千刀万剐后，三重虚妄幻想彻底崩塌的那一刻。"
-        },
-        {
-          "awemeId": "7679084874771104433",
-          "title": "放下多余执念，古今逍遥",
-          "episodeNo": 8,
-          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7679084874771104433",
-          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7679084874771104433",
-          "duration": 375,
-          "publishedAt": "2026-08-28",
-          "summary": "拖垮人的不是现实之难，而是停不下来的精神内耗。从立定内心到清空后台，一套源自《道德经》与心学的四步定心法。"
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7676306524687751611",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7676306524687751611",
+          "duration": 296,
+          "publishedAt": "2026-08-21",
+          "summary": "关系的本质是阶段性同行。不执守、不替代、不恐惧失去，才能把主动权牢牢握在自己手中。"
         }
       ],
-      "nEpisodes": 8
+      "nEpisodes": 4
+    },
+    {
+      "id": "col-f4e5b6",
+      "name": "人生五道关",
+      "accountId": "tianya-shentie",
+      "accountName": "天涯神贴隐学",
+      "cover": "https://p3-pc-sign.douyinpic.com/tos-cn-i-dy/8a2d5b08717b465fb4d081103d6a3ee5~tplv-dy-cropcenter:323:430.jpeg?lk3s=138a59ce&x-expires=2106583200&x-signature=AhI78wpcPRa1F0h5%2FK9Lw1ZBOFE%3D&from=327834062&s=PackSourceEnum_PUBLISH&se=true&sh=323_430&sc=cover&biz_tag=pcweb_cover&l=202610060247149819FF42229EE80CAF67",
+      "sort": 0,
+      "episodeTotal": 3,
+      "episodes": [
+        {
+          "awemeId": "7688324801588514075",
+          "title": "人生五道关：白手起家者的破局之路",
+          "episodeNo": 1,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7688324801588514075",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7688324801588514075",
+          "duration": 726,
+          "publishedAt": "2026-09-22",
+          "summary": "寒门突围不是靠运气，而是闯过血脉囚笼、情爱泥潭、无用围城、绝境选择与自我破茧五道铁闸。"
+        },
+        {
+          "awemeId": "7687206579489262911",
+          "title": "人生三处风水：修嘴、守正、养善",
+          "episodeNo": 2,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7687206579489262911",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7687206579489262911",
+          "duration": 128,
+          "publishedAt": "2026-09-19",
+          "summary": "人身上的风水比房子重要十倍。管好嘴、不占小便宜、保持善良，是决定人生走向的三处核心风水。"
+        }
+      ],
+      "nEpisodes": 2
+    },
+    {
+      "id": "col-7e1f3e",
+      "name": "北约战略解析",
+      "accountId": "tianya-shentie",
+      "accountName": "天涯神贴隐学",
+      "cover": "https://p3-pc-sign.douyinpic.com/tos-cn-i-dy/0c24b336f5114eed8bb0a6c4ebed5d8d~tplv-dy-cropcenter:323:430.jpeg?lk3s=138a59ce&x-expires=2106583200&x-signature=ot16eTerjx5F1ulHnhUGDX0sPYw%3D&from=327834062&s=PackSourceEnum_PUBLISH&se=true&sh=323_430&sc=cover&biz_tag=pcweb_cover&l=202610060247149819FF42229EE80CAF67",
+      "sort": 0,
+      "episodeTotal": 4,
+      "episodes": [
+        {
+          "awemeId": "7685334499470626094",
+          "title": "如果解放军单挑整个北约，胜算有多大？",
+          "episodeNo": 1,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685334499470626094",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685334499470626094",
+          "duration": 292,
+          "publishedAt": "2026-09-14",
+          "summary": "纸面兵力北约超340万，解放军仅200万，但现代战争比的不是人头，而是体系、质量与本土优势。"
+        }
+      ],
+      "nEpisodes": 1
     },
     {
       "id": "col-c7d2ad",
@@ -671,78 +749,6 @@
       "nEpisodes": 20
     },
     {
-      "id": "col-7ae27d",
-      "name": "识人与修心",
-      "accountId": "tiandao-kaiwu",
-      "accountName": "天道开悟录",
-      "cover": "https://p9-pc-sign.douyinpic.com/tos-cn-i-0813c000-ce/octf75AdVQ8ABAJfkEXX0KBQgyMArZAtHg8fEu~tplv-dy-cropcenter:323:430.jpeg?lk3s=138a59ce&x-expires=2106583200&x-signature=DdK%2Fgd9U8Sxc45aQc%2FP2PckE2js%3D&from=327834062&s=PackSourceEnum_PUBLISH&se=true&sh=323_430&sc=cover&biz_tag=pcweb_cover&l=2026100602472068B8C451EB1DEB51D549",
-      "sort": 0,
-      "episodeTotal": 6,
-      "episodes": [
-        {
-          "awemeId": "7687583174445053371",
-          "title": "面相识人 | 一眼看穿对方底牌的硬核科学",
-          "episodeNo": 1,
-          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7687583174445053371",
-          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7687583174445053371",
-          "duration": 426,
-          "publishedAt": "2026-09-20",
-          "summary": "看脸不是玄学，而是神经科学、心理学与中医气血理论交叉验证的识人硬核方法。"
-        },
-        {
-          "awemeId": "7683537873099277498",
-          "title": "真正的开悟：破人间七相",
-          "episodeNo": 2,
-          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7683537873099277498",
-          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7683537873099277498",
-          "duration": 596,
-          "publishedAt": "2026-09-09",
-          "summary": "所有内耗、委屈与不甘，皆因执着于七重虚妄假象。破相即破局，看穿方得自在。"
-        },
-        {
-          "awemeId": "7682812217184230329",
-          "title": "心邪者多疑，凡事不顺，先看自己",
-          "episodeNo": 3,
-          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7682812217184230329",
-          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7682812217184230329",
-          "duration": 373,
-          "publishedAt": "2026-09-07",
-          "summary": "心邪者多疑，量小者易怒，才疏者好辩，志短者长怨——四句话道破人生困局的根源不在外界，而在内心格局。"
-        },
-        {
-          "awemeId": "7677968607775638201",
-          "title": "看透人性，守住自己：《道德经》五条护身铁律",
-          "episodeNo": 4,
-          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7677968607775638201",
-          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7677968607775638201",
-          "duration": 317,
-          "publishedAt": "2026-08-25",
-          "summary": "真正的高手为何总带三分距离感？道家五条铁律，帮你斩断人际内耗，守住能量边界。"
-        },
-        {
-          "awemeId": "7677606044109632497",
-          "title": "一个人见过世面的最高境界",
-          "episodeNo": 5,
-          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7677606044109632497",
-          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7677606044109632497",
-          "duration": 253,
-          "publishedAt": "2026-08-24",
-          "summary": "真正见过大世面的人，不张扬、不争辩、不俯视，却让人不由自主靠近信任——老子所谓“和光同尘”，是四重脱胎换骨的修行。"
-        },
-        {
-          "awemeId": "7676306524687751611",
-          "title": "接纳来去离合，守住内心绝对主动权",
-          "episodeNo": 6,
-          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7676306524687751611",
-          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7676306524687751611",
-          "duration": 296,
-          "publishedAt": "2026-08-21",
-          "summary": "关系的本质是阶段性同行。不执守、不替代、不恐惧失去，才能把主动权牢牢握在自己手中。"
-        }
-      ],
-      "nEpisodes": 6
-    },
-    {
       "id": "col-1dab31",
       "name": "财富认知讲堂",
       "accountId": "baijia-caidu",
@@ -885,13 +891,13 @@
       "nEpisodes": 13
     },
     {
-      "id": "col-89e446",
-      "name": "道德经",
+      "id": "col-80efc3",
+      "name": "道家修心",
       "accountId": "tiandao-kaiwu",
       "accountName": "天道开悟录",
       "cover": "https://p3-pc-sign.douyinpic.com/tos-cn-i-0813c000-ce/oYCEE8IGAEeJm4OAOVntBfAIJALye7AWLnEkCg~tplv-dy-cropcenter:323:430.jpeg?lk3s=138a59ce&x-expires=2106583200&x-signature=GbXYBvBDW92SGtZKShDhYlX3PoA%3D&from=327834062&s=PackSourceEnum_PUBLISH&se=true&sh=323_430&sc=cover&biz_tag=pcweb_cover&l=2026100602472068B8C451EB1DEB51D549",
       "sort": 0,
-      "episodeTotal": 5,
+      "episodeTotal": 7,
       "episodes": [
         {
           "awemeId": "7686862385106263419",
@@ -904,9 +910,61 @@
           "summary": "道家所谓“斩三尸”，非斩外魔，而是破除善、恶、自我三重执念所筑的牢笼，回归清净本然的真我。"
         },
         {
+          "awemeId": "7685393631818279867",
+          "title": "天道忌满，人生莫求十全",
+          "episodeNo": 2,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685393631818279867",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685393631818279867",
+          "duration": 357,
+          "publishedAt": "2026-09-14",
+          "summary": "天道从不允诺圆满，得到与失去如影随形。真正的福气不在极盛，而在知止、守中、厚德载物。"
+        },
+        {
+          "awemeId": "7683537873099277498",
+          "title": "真正的开悟：破人间七相",
+          "episodeNo": 3,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7683537873099277498",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7683537873099277498",
+          "duration": 596,
+          "publishedAt": "2026-09-09",
+          "summary": "所有内耗、委屈与不甘，皆因执着于七重虚妄假象。破相即破局，看穿方得自在。"
+        },
+        {
+          "awemeId": "7679084874771104433",
+          "title": "放下多余执念，古今逍遥",
+          "episodeNo": 4,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7679084874771104433",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7679084874771104433",
+          "duration": 375,
+          "publishedAt": "2026-08-28",
+          "summary": "拖垮人的不是现实之难，而是停不下来的精神内耗。从立定内心到清空后台，一套源自《道德经》与心学的四步定心法。"
+        },
+        {
+          "awemeId": "7678704455052210789",
+          "title": "以无为心，行有为法",
+          "episodeNo": 5,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7678704455052210789",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7678704455052210789",
+          "duration": 347,
+          "publishedAt": "2026-08-27",
+          "summary": "老子的“无为”不是躺平，而是两层顶级心法：对外不违规律，对内不执结果。苏轼用一生践行——接纳无常，顺势而为，反而无所不成。"
+        }
+      ],
+      "nEpisodes": 5
+    },
+    {
+      "id": "col-70ca53",
+      "name": "道德经智慧",
+      "accountId": "tiandao-kaiwu",
+      "accountName": "天道开悟录",
+      "cover": "https://p3-pc-sign.douyinpic.com/tos-cn-i-0813c000-ce/o4pK2qAElFtIDlrfTAQAjL0efn8AKLIGAqcKeS~tplv-dy-cropcenter:323:430.jpeg?lk3s=138a59ce&x-expires=2106583200&x-signature=uT6VfnQeCf50aFs4v8UFRw9GgBE%3D&from=327834062&s=PackSourceEnum_PUBLISH&se=true&sh=323_430&sc=cover&biz_tag=pcweb_cover&l=2026100602472068B8C451EB1DEB51D549",
+      "sort": 0,
+      "episodeTotal": 5,
+      "episodes": [
+        {
           "awemeId": "7684631332039359153",
           "title": "反者道之动，弱者道之用：道德经里的生存智慧",
-          "episodeNo": 2,
+          "episodeNo": 1,
           "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7684631332039359153",
           "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7684631332039359153",
           "duration": 308,
@@ -916,7 +974,7 @@
         {
           "awemeId": "7681295530529397498",
           "title": "天之道，损有余而补不足",
-          "episodeNo": 3,
+          "episodeNo": 2,
           "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7681295530529397498",
           "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7681295530529397498",
           "duration": 451,
@@ -924,27 +982,17 @@
           "summary": "天道追求平衡，人道加剧失衡。普通人破局的关键，在于看懂两套铁律并主动切换策略。"
         },
         {
-          "awemeId": "7678704455052210789",
-          "title": "以无为心，行有为法",
-          "episodeNo": 4,
-          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7678704455052210789",
-          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7678704455052210789",
-          "duration": 347,
-          "publishedAt": "2026-08-27",
-          "summary": "老子的“无为”不是躺平，而是两层顶级心法：对外不违规律，对内不执结果。苏轼用一生践行——接纳无常，顺势而为，反而无所不成。"
-        },
-        {
-          "awemeId": "7677245475720102897",
-          "title": "命运的漏洞就是不能过于兴奋",
-          "episodeNo": 5,
-          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7677245475720102897",
-          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7677245475720102897",
-          "duration": 295,
-          "publishedAt": "2026-08-23",
-          "summary": "老子说“宠辱若惊”，过度兴奋会触发命运的平衡法则。隐藏情绪、向命运撒谎、保持谦虚，才是与天道共舞的生存智慧。"
+          "awemeId": "7677968607775638201",
+          "title": "看透人性，守住自己：《道德经》五条护身铁律",
+          "episodeNo": 3,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7677968607775638201",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7677968607775638201",
+          "duration": 317,
+          "publishedAt": "2026-08-25",
+          "summary": "真正的高手为何总带三分距离感？道家五条铁律，帮你斩断人际内耗，守住能量边界。"
         }
       ],
-      "nEpisodes": 5
+      "nEpisodes": 3
     },
     {
       "id": "col-6ef674",
@@ -989,6 +1037,28 @@
       "nEpisodes": 3
     },
     {
+      "id": "single-8b9752",
+      "name": "史苑轻谈 · 单篇",
+      "accountId": "shiyuan-qingtan",
+      "accountName": "史苑轻谈",
+      "cover": "https://p9-pc-sign.douyinpic.com/tos-cn-i-0813c001/o4PSIFDg2DC7CQAe48EIu5IAfAuAzoAafkfmMB~tplv-dy-cropcenter:323:430.jpeg?lk3s=138a59ce&x-expires=2106583200&x-signature=zBTyTz4w9gHLtlZHcf35UCF7b5M%3D&from=327834062&s=PackSourceEnum_PUBLISH&se=true&sh=323_430&sc=cover&biz_tag=pcweb_cover&l=202610060247070E565BC13D33236C4BF6",
+      "sort": 900,
+      "episodeTotal": 0,
+      "episodes": [
+        {
+          "awemeId": "7583638881591004431",
+          "title": "【易中天品三国】第一集：大江东去",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7583638881591004431",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7583638881591004431",
+          "duration": 2368,
+          "publishedAt": "2025-12-14",
+          "summary": "从苏东坡《赤壁怀古》切入，辨析周瑜、诸葛亮、关羽的历史形象与文学演绎之别，揭示历史、文学、民间三种形象的生成逻辑。"
+        }
+      ],
+      "nEpisodes": 1
+    },
+    {
       "id": "single-ca7e39",
       "name": "天涯神贴隐学 · 单篇",
       "accountId": "tianya-shentie",
@@ -1008,16 +1078,6 @@
           "summary": "家不是泄气的地方，而是养气的港湾。真正拖垮一个家庭的，从来不是贫穷，而是日积月累的情绪消耗。"
         },
         {
-          "awemeId": "7688324801588514075",
-          "title": "人生五道关：白手起家者的破局之路",
-          "episodeNo": 0,
-          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7688324801588514075",
-          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7688324801588514075",
-          "duration": 726,
-          "publishedAt": "2026-09-22",
-          "summary": "寒门突围不是靠运气，而是闯过血脉囚笼、情爱泥潭、无用围城、绝境选择与自我破茧五道铁闸。"
-        },
-        {
           "awemeId": "7687959406520061193",
           "title": "少言为贵：七种必须闭嘴的时刻",
           "episodeNo": 0,
@@ -1026,16 +1086,6 @@
           "duration": 265,
           "publishedAt": "2026-09-21",
           "summary": "话越多越蠢，一个字都不要说。真正厉害的人不是什么都能聊，而是知道什么能说、什么不能说。"
-        },
-        {
-          "awemeId": "7687206579489262911",
-          "title": "人生三处风水：修嘴、守正、养善",
-          "episodeNo": 0,
-          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7687206579489262911",
-          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7687206579489262911",
-          "duration": 128,
-          "publishedAt": "2026-09-19",
-          "summary": "人身上的风水比房子重要十倍。管好嘴、不占小便宜、保持善良，是决定人生走向的三处核心风水。"
         },
         {
           "awemeId": "7686493280111988022",
@@ -1068,16 +1118,6 @@
           "summary": "大国博弈不是街头斗殴，真正的战略高手计算的是对手衰亡的节奏与秩序。"
         },
         {
-          "awemeId": "7685708292101852426",
-          "title": "伊朗胡塞联手封喉沙特：十天改写中东海权格局",
-          "episodeNo": 0,
-          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685708292101852426",
-          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685708292101852426",
-          "duration": 424,
-          "publishedAt": "2026-09-16",
-          "summary": "胡塞武装十天攻占7000平方公里，掌控曼德海峡；伊朗扼守霍尔木兹海峡——沙特两条石油命脉被伊朗阵营 simultaneous 按住。"
-        },
-        {
           "awemeId": "7685402632441122084",
           "title": "文明之鹰：中国空军体系化远征的里程碑",
           "episodeNo": 0,
@@ -1098,16 +1138,6 @@
           "summary": "你内心如何定义自己，世界就如何对待你。金贵不是傲慢，而是清醒的自我珍视与不可侵犯的底线。"
         },
         {
-          "awemeId": "7685334499470626094",
-          "title": "如果解放军单挑整个北约，胜算有多大？",
-          "episodeNo": 0,
-          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685334499470626094",
-          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685334499470626094",
-          "duration": 292,
-          "publishedAt": "2026-09-14",
-          "summary": "纸面兵力北约超340万，解放军仅200万，但现代战争比的不是人头，而是体系、质量与本土优势。"
-        },
-        {
           "awemeId": "7684995379443649842",
           "title": "二十载逆袭：歼-20亮剑长空",
           "episodeNo": 0,
@@ -1118,16 +1148,6 @@
           "summary": "从仰望代差到同空博弈，歼-20二十年跨越的不是机型，而是一整套航空工业体系。"
         },
         {
-          "awemeId": "7682787622229396777",
-          "title": "观落阴：民间传说中的探阴术全解析",
-          "episodeNo": 0,
-          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7682787622229396777",
-          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7682787622229396777",
-          "duration": 145,
-          "publishedAt": "2026-09-08",
-          "summary": "道门神秘的观落阴仪式，真能让人魂入地府见故人？本文梳理其起源、流程与禁忌，纯属民俗奇谈，理性看待。"
-        },
-        {
           "awemeId": "7682805775609204011",
           "title": "未来十年科技局势：2035年五大爆发点",
           "episodeNo": 0,
@@ -1136,16 +1156,6 @@
           "duration": 277,
           "publishedAt": "2026-09-07",
           "summary": "活到2035年，人类或将亲历新一轮科技大爆炸。人形机器人量产、月球基地工业化、无人驾驶普及、火星移民启动、太空矿业萌芽，正在加速到来。"
-        },
-        {
-          "awemeId": "7682435684845604134",
-          "title": "详解三魂七魄：你不是一个人，而是十个住户的临时合租",
-          "episodeNo": 0,
-          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7682435684845604134",
-          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7682435684845604134",
-          "duration": 569,
-          "publishedAt": "2026-09-06",
-          "summary": "道教1500年前提出“三魂七魄”说——你并非单一主体，而是十个独立功能单元共居一身。本文不谈迷信，只讲文化逻辑与身心结构。"
         },
         {
           "awemeId": "7682046178166410534",
@@ -1198,29 +1208,311 @@
           "summary": "本文依帛书本重解“上善治水”章，破除通本误读，揭示老子以水为法的修行本质与天道无亲的真义。"
         }
       ],
-      "nEpisodes": 20
+      "nEpisodes": 14
     },
     {
       "id": "single-ce320a",
       "name": "天道开悟录 · 单篇",
       "accountId": "tiandao-kaiwu",
       "accountName": "天道开悟录",
-      "cover": "https://p3-pc-sign.douyinpic.com/tos-cn-i-0813c000-ce/owCmEoiBAhfEAxWA0qe3AtIIzAiav9AtHaCJlw~tplv-dy-cropcenter:323:430.jpeg?lk3s=138a59ce&x-expires=2106583200&x-signature=0ozWH9fFvRfpoCJZ56kz3ReiWb0%3D&from=327834062&s=PackSourceEnum_PUBLISH&se=true&sh=323_430&sc=cover&biz_tag=pcweb_cover&l=2026100602472068B8C451EB1DEB51D549",
+      "cover": "https://p9-pc-sign.douyinpic.com/tos-cn-i-0813c000-ce/octf75AdVQ8ABAJfkEXX0KBQgyMArZAtHg8fEu~tplv-dy-cropcenter:323:430.jpeg?lk3s=138a59ce&x-expires=2106583200&x-signature=DdK%2Fgd9U8Sxc45aQc%2FP2PckE2js%3D&from=327834062&s=PackSourceEnum_PUBLISH&se=true&sh=323_430&sc=cover&biz_tag=pcweb_cover&l=2026100602472068B8C451EB1DEB51D549",
       "sort": 900,
       "episodeTotal": 0,
       "episodes": [
         {
-          "awemeId": "7689847148443462522",
-          "title": "新官上任：四步建立真实威慑力",
+          "awemeId": "7687583174445053371",
+          "title": "面相识人 | 一眼看穿对方底牌的硬核科学",
           "episodeNo": 0,
-          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7689847148443462522",
-          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7689847148443462522",
-          "duration": 352,
-          "publishedAt": "2026-09-26",
-          "summary": "新领导坐不稳？张居正三个月驯服万历朝的用人铁律，直击职场权力本质。"
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7687583174445053371",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7687583174445053371",
+          "duration": 426,
+          "publishedAt": "2026-09-20",
+          "summary": "看脸不是玄学，而是神经科学、心理学与中医气血理论交叉验证的识人硬核方法。"
+        },
+        {
+          "awemeId": "7685020469468621169",
+          "title": "一定要远离业力很深的人",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7685020469468621169",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7685020469468621169",
+          "duration": 375,
+          "publishedAt": "2026-09-13",
+          "summary": "业力不是迷信，而是代际创伤的生理烙印与心理惯性。破除它只需三步：觉察冻结、逆向选择、意义锚点重塑。"
+        },
+        {
+          "awemeId": "7682812217184230329",
+          "title": "心邪者多疑，凡事不顺，先看自己",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7682812217184230329",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7682812217184230329",
+          "duration": 373,
+          "publishedAt": "2026-09-07",
+          "summary": "心邪者多疑，量小者易怒，才疏者好辩，志短者长怨——四句话道破人生困局的根源不在外界，而在内心格局。"
+        },
+        {
+          "awemeId": "7682411036079990649",
+          "title": "凡是负能量的东西，千万不要去回应",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7682411036079990649",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7682411036079990649",
+          "duration": 318,
+          "publishedAt": "2026-09-06",
+          "summary": "不争不是软弱，而是顺应规律的顶级智慧。不与消耗你的人事纠缠，是对自己最深的保护。"
+        },
+        {
+          "awemeId": "7682061022824717243",
+          "title": "如何科学地提升运气",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7682061022824717243",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7682061022824717243",
+          "duration": 289,
+          "publishedAt": "2026-09-05",
+          "summary": "运气不是天注定的盲盒，而是一门可修炼的技术。本文拆解运气的底层逻辑，教你用松弛、敬畏与利他，主动造运。"
+        },
+        {
+          "awemeId": "7680566601271829691",
+          "title": "在黑白之间，走出自己的方向",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7680566601271829691",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7680566601271829691",
+          "duration": 300,
+          "publishedAt": "2026-09-01",
+          "summary": "社会化程度越高，越能接纳世界的灰度。接受灰度不是妥协，而是清醒认知人性与现实的复杂，在矛盾中守住底线、锚定方向。"
+        },
+        {
+          "awemeId": "7680305405751189625",
+          "title": "低谷不是深渊，是重塑内核的起点",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7680305405751189625",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7680305405751189625",
+          "duration": 381,
+          "publishedAt": "2026-09-01",
+          "summary": "真正觉醒从不是被点醒，而是被生活千刀万剐后，三重虚妄幻想彻底崩塌的那一刻。"
+        },
+        {
+          "awemeId": "7677606044109632497",
+          "title": "一个人见过世面的最高境界",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7677606044109632497",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7677606044109632497",
+          "duration": 253,
+          "publishedAt": "2026-08-24",
+          "summary": "真正见过大世面的人，不张扬、不争辩、不俯视，却让人不由自主靠近信任——老子所谓“和光同尘”，是四重脱胎换骨的修行。"
         }
       ],
-      "nEpisodes": 1
+      "nEpisodes": 8
+    },
+    {
+      "id": "single-307066",
+      "name": "木读精进史 · 单篇",
+      "accountId": "mudu-jingjin",
+      "accountName": "木读精进史",
+      "cover": "https://p9-pc-sign.douyinpic.com/tos-cn-i-dy/633a6db6aa014abe9b1f8fe4d1794d44~tplv-dy-cropcenter:323:430.jpeg?lk3s=138a59ce&x-expires=2106583200&x-signature=YJMuCyVVd8ArWKj6oMebDYGPfw4%3D&from=327834062&s=PackSourceEnum_PUBLISH&se=true&sh=323_430&sc=cover&biz_tag=pcweb_cover&l=20261006024727AC748C36EACFF713BF98",
+      "sort": 900,
+      "episodeTotal": 0,
+      "episodes": [
+        {
+          "awemeId": "7690771776283872553",
+          "title": "大脑不受控制地胡思乱想，赶紧救你自己",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7690771776283872553",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7690771776283872553",
+          "duration": 545,
+          "publishedAt": "2026-09-29",
+          "summary": "高敏感人群常陷过度思考与精神内耗。本文揭示大脑只是工具而非“我”，并提供4个即刻可用的关停方法。"
+        },
+        {
+          "awemeId": "7690428213092257050",
+          "title": "人生下半场要胆子大，不怕事，不怕人，不做退缩的人",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7690428213092257050",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7690428213092257050",
+          "duration": 535,
+          "publishedAt": "2026-09-29",
+          "summary": "恐惧是大脑设下的圈套，而非你的真实本质。觉知、感受、沉浮三步法，帮你把胆量活成超能力。"
+        },
+        {
+          "awemeId": "7690398014824893734",
+          "title": "不惧怕任何人和事，是觉醒的开始",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7690398014824893734",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7690398014824893734",
+          "duration": 536,
+          "publishedAt": "2026-09-28",
+          "summary": "恐惧源于内心所求与执念。破除对人、对事的畏惧，不是变得强硬，而是回归内在力量，走向真正自由与清醒。"
+        },
+        {
+          "awemeId": "7690033183181557018",
+          "title": "学任何东西都比别人快三倍的秘密，不是记步骤，是偷结构",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7690033183181557018",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7690033183181557018",
+          "duration": 599,
+          "publishedAt": "2026-09-27",
+          "summary": "高手学得快，不是因为天赋，而是擅长从纷繁步骤中提取底层结构。掌握“三步抽象法”，你也能把一个领域的思维迁移到另一个领域。"
+        },
+        {
+          "awemeId": "7690012147044093235",
+          "title": "终于知道我为什么和谁都玩不熟了",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7690012147044093235",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7690012147044093235",
+          "duration": 670,
+          "publishedAt": "2026-09-27",
+          "summary": "关系不是等来的，而是养出来的。那些“没用”的闲聊、闲约、闲扯，才是熟起来的真正起点。"
+        },
+        {
+          "awemeId": "7689653141721173289",
+          "title": "哈佛三十年研究发现：成事的关键诀窍，是吃大量高级的苦",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7689653141721173289",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7689653141721173289",
+          "duration": 677,
+          "publishedAt": "2026-09-26",
+          "summary": "哈佛30年追踪研究揭示：决定人生分野的不是智商或家境，而是主动承受高质量痛苦的能力。"
+        },
+        {
+          "awemeId": "7689650864801205523",
+          "title": "纳瓦尔：永远只专注于自己，95%的事与你的人生主线无关",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7689650864801205523",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7689650864801205523",
+          "duration": 535,
+          "publishedAt": "2026-09-26",
+          "summary": "纳瓦尔指出，人生95%的事务与主线无关；注意力是产生复利的初始资本，聚焦特定知识才能构建不可替代性。"
+        },
+        {
+          "awemeId": "7689033003548331274",
+          "title": "尽量让孩子在家中完成社会化",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7689033003548331274",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7689033003548331274",
+          "duration": 456,
+          "publishedAt": "2026-09-25",
+          "summary": "孩子真正的社会化，始于家庭。五个日常可操作的心法，帮孩子在家练就表达力、边界感、责任感、情绪力与模仿力。"
+        },
+        {
+          "awemeId": "7689026230636612914",
+          "title": "高敏感的人，没有任何等级观念，这也是他们前半生混不好的原因",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7689026230636612914",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7689026230636612914",
+          "duration": 738,
+          "publishedAt": "2026-09-25",
+          "summary": "高敏感不是软弱，而是未觉醒的力量。前半生吃亏，是因为活在去等级化的真诚里；后半生开挂，源于觉知力与分层力的双重觉醒。"
+        },
+        {
+          "awemeId": "7688895350492400915",
+          "title": "分析问题的四个视角：用四角法看透本质，事半功倍",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7688895350492400915",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7688895350492400915",
+          "duration": 528,
+          "publishedAt": "2026-09-24",
+          "summary": "未来、全局、换位、辩证——四大思维视角帮你跳出表象，直击问题本质，提升决策质量与行动效率。"
+        },
+        {
+          "awemeId": "7688892035742436634",
+          "title": "没人教你经商？死磕这4件事90天，练出商人视角，走到哪都有商机",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7688892035742436634",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7688892035742436634",
+          "duration": 414,
+          "publishedAt": "2026-09-24",
+          "summary": "普通人提升商业嗅觉不靠天赋和背景，只需坚持90天四项实操训练：拆广告、算生意、听抱怨、放下面子。"
+        },
+        {
+          "awemeId": "7688704540086347515",
+          "title": "十八个人进山，为什么最后是一个警察没有回来？",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7688704540086347515",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7688704540086347515",
+          "duration": 359,
+          "publishedAt": "2026-09-24",
+          "summary": "复旦18驴事件：一场草率成团的黄山穿越，暴露了侥幸思维与责任边界的致命断裂。"
+        },
+        {
+          "awemeId": "7688565485209767202",
+          "title": "斯坦福与哈佛的共识：人生中回报很高的一件小事，每天五分钟就够",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7688565485209767202",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7688565485209767202",
+          "duration": 750,
+          "publishedAt": "2026-09-23",
+          "summary": "书面反思是被顶尖学府验证的高回报习惯——每天三行字、五分钟，就能启动自我校准系统。"
+        },
+        {
+          "awemeId": "7688559646348512531",
+          "title": "在没赚到一百万之前，请闷声干这十八件事",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7688559646348512531",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7688559646348512531",
+          "duration": 685,
+          "publishedAt": "2026-09-23",
+          "summary": "财务自由前的沉默积累期，比努力更重要的是方向与节奏。这18件事帮你稳住心神、夯实根基、积蓄破土之力。"
+        },
+        {
+          "awemeId": "7688194346885074186",
+          "title": "世界上广为人知的五大定律",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7688194346885074186",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7688194346885074186",
+          "duration": 427,
+          "publishedAt": "2026-09-22",
+          "summary": "墨菲、基德林、吉尔伯特、威尔逊、福克兰——五条贴近生活的人生定律，分别对应风险、问题、责任、财富与决策。"
+        },
+        {
+          "awemeId": "7688188209888578826",
+          "title": "部分职场有个怪现象，正事推进慢，反而一门心思拿捏老实人",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7688188209888578826",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7688188209888578826",
+          "duration": 537,
+          "publishedAt": "2026-09-22",
+          "summary": "干活最多的人最受气，偷懒耍滑的却过得滋润。这不是你不够好，而是某些单位管理失效、风气扭曲的恶果。"
+        },
+        {
+          "awemeId": "7687830355474271503",
+          "title": "真正的学习，从第四遍才开始",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7687830355474271503",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7687830355474271503",
+          "duration": 281,
+          "publishedAt": "2026-09-21",
+          "summary": "学习不是一蹴而就，而是螺旋上升的过程。前三遍是铺垫，第四遍才是深度内化的起点。"
+        },
+        {
+          "awemeId": "7687816832446680370",
+          "title": "学会这四步，把别人的方法真正变成自己的",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7687816832446680370",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7687816832446680370",
+          "duration": 504,
+          "publishedAt": "2026-09-21",
+          "summary": "读懂不等于掌握。从看结构、拆结构、自己建构到场景重构，四步完成知识向能力的转化。"
+        },
+        {
+          "awemeId": "7687545381508435252",
+          "title": "学习的本质，就是死磕这三件事",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7687545381508435252",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7687545381508435252",
+          "duration": 477,
+          "publishedAt": "2026-09-20",
+          "summary": "学习不是信息堆砌，而是逆本能的三重死磕：重复建立神经通路、复盘识别错误模式、深度思考重构认知框架。"
+        },
+        {
+          "awemeId": "7687449685383974195",
+          "title": "人最大的悲哀就是胆小，什么事都不要怕，什么事都别着急，豁出去",
+          "episodeNo": 0,
+          "audioUrl": "http://127.0.0.1:8766/media/audio?aweme_id=7687449685383974195",
+          "articleUrl": "http://127.0.0.1:8766/media/article/text?aweme_id=7687449685383974195",
+          "duration": 693,
+          "publishedAt": "2026-09-20",
+          "summary": "恐惧和急迫是困住现代人的双重枷锁。看清它们的本质，松开执念，才能真正豁出去，活得自在而有力。"
+        }
+      ],
+      "nEpisodes": 20
     }
   ]
 }

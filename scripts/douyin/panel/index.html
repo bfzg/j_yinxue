@@ -324,6 +324,10 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink2);whit
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
         发布 / 导出
       </button>
+      <button data-view="audio">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14v-4M7 18V6M11 15V9M15 21V3M19 16v-8"/></svg>
+        音频体积
+      </button>
       <button data-view="log">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h6"/></svg>
         日志
@@ -433,6 +437,37 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink2);whit
           </div>
           <p class="hint">发布 = 上传 mp3 与正文 txt 到腾讯云 COS 并把条目置为 published，随后自动重建 articles.json / playlist.json / columns.json。导出只写前端数据文件，不动 COS。</p>
           <p class="hint">COS 密钥用环境变量 <code>COS_SECRET_ID</code> / <code>COS_SECRET_KEY</code>，没配也能先跑采集与成文，发布按钮会提示原因。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 音频体积 -->
+    <section class="view" id="view-audio">
+      <div class="card">
+        <h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14v-4M7 18V6M11 15V9M15 21V3M19 16v-8"/></svg>
+          落库音质与体积
+        </h2>
+        <div class="body">
+          <div class="light" id="audioLight"><i class="lamp"></i><div class="txt"><div class="t1">读取中…</div><div class="t2"></div></div></div>
+          <div class="row" id="audioStats"></div>
+          <div class="field" style="margin-top:11px"><label>档位：新增音频按它转，存量点「瘦身存量」原地重编（不用重新下载）</label><select id="audioProfile"></select></div>
+          <table id="audioTable"></table>
+          <div class="row" style="margin-top:10px">
+            <button class="btn primary" id="btnAudioSave">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+              保存档位
+            </button>
+            <button class="btn" id="btnAudioEstimate">预估这次能省</button>
+            <button class="btn" id="btnAudioCompact">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6M20 10h-6V4"/><path d="M4 20l6-6M20 4l-6 6"/></svg>
+              瘦身存量
+            </button>
+            <label class="check" title="转完留着原来的大文件，占双倍磁盘"><input type="checkbox" id="audioKeep">保留原文件</label>
+            <label class="check" title="已发布的 COS 地址会换文件名，需要重新发布"><input type="checkbox" id="audioPub">连已发布一起转</label>
+          </div>
+          <p class="hint">语音内容双声道是白花钱：单声道 AAC 40kbps 听不出差别，体积只有原来四分之一。m4a 在微信小程序 <code>innerAudioContext</code> 与 H5 都能播，opus/ogg 不支持，所以档位表里没有 opus。</p>
+          <p class="hint">瘦身只做一次校验：时长对不上或体积没变小的文件一律保留原样，跑重复也不会重复计费。</p>
         </div>
       </div>
     </section>

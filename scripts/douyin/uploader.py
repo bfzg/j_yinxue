@@ -24,6 +24,15 @@ sys.path.insert(0, str(Path(__file__).parent))
 import config
 
 
+_MIME = {".mp3": "audio/mpeg", ".m4a": "audio/mp4", ".aac": "audio/aac",
+         ".txt": "text/plain; charset=utf-8", ".json": "application/json"}
+
+
+def _guess_type(path: Path) -> str:
+    """按扩展名猜 MIME，未知一律 octet-stream"""
+    return _MIME.get(Path(path).suffix.lower(), "application/octet-stream")
+
+
 class CosUploader:
     """腾讯云 COS 上传工具"""
 
@@ -69,13 +78,16 @@ class CosUploader:
         self._client = CosS3Client(config_)
         return self._client
 
-    def upload_file(self, local_path: str | Path, cos_key: str) -> bool:
+    def upload_file(self, local_path: str | Path, cos_key: str,
+                    content_type: str = "") -> bool:
         """
         上传单个文件到 COS
 
         Args:
             local_path: 本地文件路径
-            cos_key: COS 上的对象键（如 jiugeyinxue/xxx.mp3）
+            cos_key: COS 上的对象键（如 jiugeyinxue/xxx.m4a）
+            content_type: 显式 MIME。m4a 留空会被 COS 标成 octet-stream，
+                          iOS / H5 的 audio 标签可能因此拒播
 
         Returns:
             是否上传成功
@@ -111,6 +123,7 @@ class CosUploader:
                 Key=cos_key,
                 LocalFilePath=str(local_path),
                 EnableMD5=True,
+                ContentType=content_type or _guess_type(local_path),
             )
             print(f"  [完成] {cos_key}")
             return True

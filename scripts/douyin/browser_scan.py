@@ -216,6 +216,21 @@ def kill_profile_chrome() -> list[int]:
     return killed
 
 
+def _wait_profile_free(profile: Path, wait_sec: float = 25.0) -> Optional[int]:
+    """等上一个 Chrome 真的退出并释放配置目录，返回仍占用的 pid
+
+    切换有头/无头时 get_session 会先 close 再重开，旧进程退出要一两秒，
+    这时立刻查占用会误报「profile 正被占用」，整批采集莫名其妙就红了。
+    """
+    deadline = time.time() + wait_sec
+    while time.time() < deadline:
+        owner = _profile_owner(profile)
+        if owner is None:
+            return None
+        time.sleep(0.5)
+    return _profile_owner(profile)
+
+
 def _launch(pw, headless: bool, anon: bool = False):
     profile = ANON_DIR if anon else PROFILE_DIR
     kwargs = dict(
@@ -226,7 +241,7 @@ def _launch(pw, headless: bool, anon: bool = False):
         ignore_default_args=["--enable-automation"],
     )
     profile.mkdir(parents=True, exist_ok=True)
-    owner = _profile_owner(profile)
+    owner = _wait_profile_free(profile)
     if owner:
         raise RuntimeError(
             f"Chrome 配置 {profile.name} 正被进程 {owner} 占用"
