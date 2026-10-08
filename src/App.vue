@@ -5,7 +5,6 @@ defineOptions({
 </script>
 
 <template>
-
 </template>
 
 <style lang="scss">

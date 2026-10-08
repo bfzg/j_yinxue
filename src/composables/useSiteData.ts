@@ -1,18 +1,13 @@
 import { reactive } from 'vue'
-import seedArticles from '@/static/data/articles.json'
-import seedColumns from '@/static/data/columns.json'
-import seedPlaylist from '@/static/data/playlist.json'
 import { fetchAll, fetchColumn, fetchColumns, fetchManifest } from '@/api/content'
 import type { SiteApp, SiteManifest, SiteSettings } from '@/api/content'
 import type { Article } from '@/types/article'
 import type { Column, ColumnEpisode } from '@/types/column'
 
 /**
- * 站点数据的唯一来源。
- *
- * 三级回落：云端集合 > 本地缓存 > 打包在小程序里的 static/data/*.json。
- * 打包 json 只作为首次启动和云端不可达时的保底，日常更新全部由
- * 后台面板推数 + dataVersion 比对驱动，用户不需要再手工替换 json。
+ * 站点数据的唯一来源。一切以线上为主，不缓存列表数据。
+ * 启动时先空列表，等云端拉回来再填充。
+ * 只缓存 manifest（含 dataVersion）用于版本变更检测。
  */
 
 /** 播放列表条目：playlist 接口的返回形状，比 Article 少字段但带 columnId */
@@ -24,6 +19,8 @@ export interface PlaylistEntry {
   audioUrl: string
   duration?: number
   sort?: number
+  /** 本合集内的位次，来自云端 column.episodeIds 的下标 */
+  rank?: number
   enabled?: boolean
   publishedAt?: string
   columnId?: string
@@ -33,7 +30,7 @@ export interface PlaylistEntry {
   accountId?: string
 }
 
-type SourceKind = 'seed' | 'cache' | 'cloud'
+type SourceKind = 'cloud'
 
 interface SiteState {
   ready: boolean
@@ -51,24 +48,17 @@ interface SiteState {
 }
 
 const K_MANIFEST = 'jy:manifest'
-const K_ARTICLES = 'jy:articles'
-const K_PLAYLIST = 'jy:playlist'
-const K_COLUMNS = 'jy:columns'
-const K_COLUMN_PREFIX = 'jy:column:'
-
-/** 微信单条缓存上限 1MB，留出余量，超了就先截断，反正云端拉一次就能补全 */
-const MAX_STORAGE_CHARS = 900 * 1024
 /** 同一份数据 5 分钟内不重复问 manifest，避免页面 onShow 打爆云函数 */
 const MANIFEST_TTL = 5 * 60 * 1000
 
-const SEED_APP: SiteApp = (seedArticles as any).app
-const SEED_SETTINGS: SiteSettings = (seedPlaylist as any).settings || { autoplayNext: true, playMode: 'sequence' }
+const SEED_APP: SiteApp = { name: '', author: '', cover: '', description: '' }
+const SEED_SETTINGS: SiteSettings = { autoplayNext: true, playMode: 'sequence' }
 
 const site = reactive<SiteState>({
   ready: false,
   syncing: false,
   error: '',
-  source: 'seed',
+  source: 'cloud',
   dataVersion: 0,
   updatedAt: 0,
   counts: { episodes: 0, columns: 0 },
@@ -82,75 +72,40 @@ const site = reactive<SiteState>({
 let hydrated = false
 let inflight: Promise<void> | null = null
 let lastCheckedAt = 0
+/**
+ * 内存里到底有没有列表。
+ * 冷启动时列表是空的，manifest 却可能从缓存里读出一个和线上一样的版本号，
+ * 拿版本号当「数据已经在手上」的凭证就会让首次进入永远白屏，只能靠下拉刷新救。
+ */
+let loaded = false
 
-function readCache<T>(key: string): T | null {
+/** 只缓存 manifest（含 dataVersion），用于版本变更检测和灰阶展示 */
+function readManifestCache(): SiteManifest | null {
   try {
-    const value = uni.getStorageSync(key)
-    return value ? (value as T) : null
+    return (uni.getStorageSync(K_MANIFEST) as SiteManifest) || null
   }
   catch {
     return null
   }
 }
 
-function writeCache(key: string, value: unknown) {
+function writeManifestCache(manifest: SiteManifest) {
   try {
-    const raw = JSON.stringify(value)
-    if (raw && raw.length > MAX_STORAGE_CHARS && Array.isArray(value)) {
-      // 按累积长度砍尾部，保留前面的条目（列表已按 sort 排好，头部就是最新）
-      const kept: unknown[] = []
-      let size = 2
-      for (const item of value) {
-        const one = JSON.stringify(item)
-        size += one.length + 1
-        if (size > MAX_STORAGE_CHARS)
-          break
-        kept.push(item)
-      }
-      uni.setStorageSync(key, kept)
-      return
-    }
-    uni.setStorageSync(key, value)
+    uni.setStorageSync(K_MANIFEST, manifest)
   }
   catch {
-    // 缓存写失败不影响使用，下次冷启会退回 seed 或直接走云端
+    /* 写失败不影响使用 */
   }
 }
 
-/** 同步读本地状态，页面首次渲染就能有内容 */
+/** 从缓存恢复 manifest，列表数据不缓存，等云端 */
 function hydrate() {
-  if (hydrated)
+  if (hydrated) {
     return
+  }
   hydrated = true
 
-  const manifest = readCache<SiteManifest>(K_MANIFEST)
-  const articles = readCache<Article[]>(K_ARTICLES)
-  const playlist = readCache<PlaylistEntry[]>(K_PLAYLIST)
-  const columns = readCache<Column[]>(K_COLUMNS)
-
-  if (articles?.length) {
-    site.articles = articles.filter(one => one.enabled !== false)
-    site.source = 'cache'
-  }
-  else {
-    site.articles = (seedArticles as any).items || []
-  }
-
-  if (playlist?.length) {
-    site.playlist = playlist.filter(one => one.enabled !== false)
-  }
-  else {
-    site.playlist = (seedPlaylist as any).items || []
-  }
-
-  if (columns?.length) {
-    site.columns = columns
-    site.source = 'cache'
-  }
-  else {
-    site.columns = (seedColumns as any).items || []
-  }
-
+  const manifest = readManifestCache()
   if (manifest) {
     site.app = manifest.app || SEED_APP
     site.settings = manifest.settings || SEED_SETTINGS
@@ -168,7 +123,7 @@ function applyManifest(manifest: SiteManifest) {
   site.dataVersion = Number(manifest.dataVersion || 0)
   site.updatedAt = Number(manifest.updatedAt || 0)
   site.counts = manifest.counts || site.counts
-  writeCache(K_MANIFEST, manifest)
+  writeManifestCache(manifest)
 }
 
 async function pullAll() {
@@ -182,20 +137,12 @@ async function pullAll() {
   const liveArticles = articles.filter(one => (one as any).enabled !== false)
   const livePlaylist = playlist.filter(one => one.enabled !== false)
 
-  // 云端空集合时不要把兜底数据一起清掉，否则面板还没推数就会白屏
-  if (liveArticles.length) {
-    site.articles = liveArticles
-    writeCache(K_ARTICLES, liveArticles)
-  }
-  if (livePlaylist.length) {
-    site.playlist = livePlaylist
-    writeCache(K_PLAYLIST, livePlaylist)
-  }
-  if (columns.length) {
-    site.columns = columns
-    writeCache(K_COLUMNS, columns)
-  }
+  // 一切以线上为准，云端返回什么就展示什么
+  site.articles = liveArticles
+  site.playlist = livePlaylist
+  site.columns = columns
   site.source = 'cloud'
+  loaded = true
 }
 
 /**
@@ -208,7 +155,7 @@ export function ensureSiteData(force = false): Promise<void> {
   const fresh = Date.now() - lastCheckedAt < MANIFEST_TTL
   if (inflight)
     return inflight
-  if (!force && site.source === 'cloud' && fresh)
+  if (!force && loaded && fresh)
     return Promise.resolve()
 
   inflight = (async () => {
@@ -219,8 +166,8 @@ export function ensureSiteData(force = false): Promise<void> {
       const manifest = await fetchManifest()
       applyManifest(manifest)
       lastCheckedAt = Date.now()
-      // 版本号没变说明后台没推新数据，列表就不用再取一遍
-      if (force || Number(manifest.dataVersion || 0) !== prevVersion || site.source !== 'cloud') {
+      // 手上还没有列表就必须取；版本号没变才省掉这一趟
+      if (force || !loaded || Number(manifest.dataVersion || 0) !== prevVersion) {
         await pullAll()
       }
     }
@@ -238,29 +185,32 @@ export function ensureSiteData(force = false): Promise<void> {
 }
 
 /**
- * 取单个栏目的分集。列表接口不再内联 episodes，所以按需拉取并缓存，
- * 兜底用打包 json 里的那份，保证推数之前点进去也有内容。
+ * 下拉刷新专用：无视 5 分钟内不重复取数的保护，强制回云端取一遍。
+ * 先等手上的请求结束，避免两条链路并发写同一份数据。
+ */
+export async function refreshSiteData(): Promise<void> {
+  hydrate()
+  if (inflight) {
+    await inflight.catch(() => {})
+  }
+  lastCheckedAt = 0
+  await ensureSiteData(true)
+}
+
+/**
+ * 取单个栏目的分集。列表接口不再内联 episodes，所以按需拉取。
+ * 不走缓存，每次都从云端拿，下拉刷新直接再调一次即可。
  */
 export async function loadColumnEpisodes(id: string): Promise<ColumnEpisode[]> {
-  const key = `${K_COLUMN_PREFIX}${id}`
-  const cached = readCache<{ version: number, episodes: ColumnEpisode[] }>(key)
-  if (cached && Number(cached.version) === site.dataVersion) {
-    return cached.episodes || []
-  }
-
-  const seedItem = ((seedColumns as any).items || []).find((one: Column) => one.id === id)
   try {
     const res = await fetchColumn(id)
-    const episodes = res?.item?.episodes || []
-    if (episodes.length) {
-      writeCache(key, { version: site.dataVersion, episodes })
-      return episodes
-    }
+    const list = res?.item?.episodes || []
+    // 云函数改版前可能还带下架子集，客户端再挡一道
+    return list.filter(one => (one as any).enabled !== false)
   }
   catch {
-    // 云端没数据/断网，走兜底
+    return []
   }
-  return seedItem?.episodes || []
 }
 
 export function findColumn(id: string): Column | undefined {
@@ -276,6 +226,7 @@ export function useSiteData() {
   return {
     site,
     ensureSiteData,
+    refreshSiteData,
     loadColumnEpisodes,
     findColumn,
     findArticle,

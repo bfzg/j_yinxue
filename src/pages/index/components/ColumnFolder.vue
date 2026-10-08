@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import type { Column } from '@/types/column'
 
 defineOptions({
@@ -15,14 +15,6 @@ const emit = defineEmits<{
 }>()
 
 const coverFailed = ref(false)
-
-const collected = computed(() => props.column.nEpisodes ?? props.column.episodes?.length ?? 0)
-
-// 采集进度没跑完的系列，封面角标写成「6/12 集」更直观
-const progressLabel = computed(() => {
-  const total = props.column.episodeTotal || 0
-  return total > collected.value ? `${collected.value}/${total} 集` : `${collected.value} 集`
-})
 </script>
 
 <template>
@@ -88,7 +80,6 @@ const progressLabel = computed(() => {
   box-sizing: border-box;
   height: 100%;
   flex-direction: column;
-  padding: 14rpx;
 }
 
 .folder:active .folder-body {

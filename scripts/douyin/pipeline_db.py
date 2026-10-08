@@ -112,7 +112,10 @@ def now() -> str:
 _MIGRATIONS = {
     "videos": ["audio_url TEXT", "article_url TEXT",
                "audio_file_id TEXT", "article_file_id TEXT",
-               "cloud_pushed_at TEXT"],
+               "cloud_pushed_at TEXT",
+               # 后台点「下架」要能扛住下一次上架：本地 stage 保持 published，
+               # 只靠 offline=1 把它挡在推送范围之外，否则元数据一同步就又亮了
+               "offline INTEGER DEFAULT 0", "offline_at TEXT"],
     "accounts": ["scan_note TEXT"],
     "columns": ["cover_url_cloud TEXT", "cover_file_id TEXT",
                 "cover_source_url TEXT", "cover_pushed_at TEXT"],
@@ -274,6 +277,14 @@ def list_columns(conn, sec_user_id: str = None) -> list[dict]:
                     (SELECT MAX(v.episode_no) FROM videos v WHERE v.column_id = c.column_id) AS max_ep,
                     (SELECT SUM(CASE WHEN v.stage IN ('article','published') THEN 1 ELSE 0 END)
                        FROM videos v WHERE v.column_id = c.column_id) AS n_articles,
+                    (SELECT SUM(CASE WHEN v.stage = 'published'
+                                          AND IFNULL(v.offline, 0) = 0
+                                     THEN 1 ELSE 0 END)
+                       FROM videos v WHERE v.column_id = c.column_id) AS n_published,
+                    (SELECT SUM(CASE WHEN v.stage = 'published'
+                                          AND IFNULL(v.offline, 0) = 1
+                                     THEN 1 ELSE 0 END)
+                       FROM videos v WHERE v.column_id = c.column_id) AS n_offline,
                     (SELECT SUM(v.duration_ms) FROM videos v WHERE v.column_id = c.column_id) AS total_ms
              FROM columns c"""
     params: tuple = ()
@@ -297,6 +308,14 @@ def set_column_cover(conn, column_id: str, *, cloud_url: str, file_id: str = "",
         "cover_source_url=?, cover_pushed_at=? WHERE column_id=?",
         (cloud_url, file_id, source_url, now(), column_id),
     )
+    conn.commit()
+
+
+def set_offline(conn, ids: list[str], offline: bool = True):
+    """记下面板的上架/下架意图，本地阶段不动，只挡推送范围"""
+    for aweme_id in [str(one) for one in ids if one]:
+        conn.execute("UPDATE videos SET offline=?, offline_at=? WHERE aweme_id=?",
+                     (1 if offline else 0, now(), aweme_id))
     conn.commit()
 
 

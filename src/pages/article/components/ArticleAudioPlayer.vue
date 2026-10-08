@@ -45,6 +45,7 @@ function onSliderChange(event: any) {
         <view class="audio-title-row">
           <text class="audio-title">{{ title }}</text>
           <text v-if="state.error" class="audio-error">{{ state.error }}</text>
+          <text v-else-if="state.hint" class="audio-error">{{ state.hint }}</text>
         </view>
         <text class="audio-time">
           {{ formatTime(state.currentTime) }} / {{ formatTime(state.duration) }}

@@ -5,7 +5,7 @@
   1 账号管理    增删改 + 每账号抓取上限 + probe
   2 登录态      Cookie 粘贴/回写、体检红绿灯、扫码登录
   3 作品队列    筛选、勾选、批量「下载音频 → 转写 → 生成文章」
-  4 栏目与发布  AI 自动分栏目、改名/锁定、导出前端数据、人工点发布
+  4 栏目与上架  AI 自动分栏目、改名/锁定、导出前端数据、人工点上架
 
 浏览器操作一律经 browser_scan.call 排队到同一个 Chrome 所在线程；
 耗时任务丢后台线程，前端轮询 /api/jobs 看进度。
@@ -40,6 +40,16 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"],
 
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 app.mount("/static", StaticFiles(directory=str(HERE)), name="static")
+
+
+@app.middleware("http")
+async def no_store_ui(request, call_next):
+    """面板改版频繁，HTML 和 app.js 一律不许缓存，免得点了按钮还是旧代码"""
+    resp = await call_next(request)
+    if request.url.path == "/" or request.url.path.startswith("/static/"):
+        resp.headers["Cache-Control"] = "no-store, must-revalidate"
+        resp.headers["Pragma"] = "no-cache"
+    return resp
 
 # ---------- 后台任务表 ----------
 
@@ -674,13 +684,13 @@ def api_assign(body: dict = Body(...)):
     return {"assigned": len(ids)}
 
 
-# ---------- 发布 / 导出 ----------
+# ---------- 上架 / 导出 ----------
 
 @app.post("/api/publish")
 def api_publish(body: dict = Body(...)):
-    """旧入口别名：统一走云端发布，避免两套发布逻辑分叉"""
+    """旧入口别名：统一走云端上架，避免两套发布逻辑分叉"""
     b = dict(body or {})
-    b.setdefault("note", "面板发布")
+    b.setdefault("note", "面板上架")
     return api_cloud_publish(b)
 
 
@@ -694,7 +704,7 @@ def api_export(body: dict = Body(...)):
         conn.close()
 
 
-# ---------- uniCloud 云端发布 ----------
+# ---------- uniCloud 云端上架 ----------
 
 def _cloud_summary(conn) -> dict:
     """面板红绿灯用：只看本地配置和本地进度，不发网络请求"""
@@ -813,7 +823,7 @@ def api_cloud_publish(body: dict = Body(...)):
     limit = int(body.get("limit") or 0)
     note = str(body.get("note") or "")[:180]
     if not ids and not column and not sec and not body.get("all"):
-        raise HTTPException(400, "请勾选作品，或指定账号/栏目，或明确 all=true 发布全部待发布")
+        raise HTTPException(400, "请勾选作品，或指定账号/栏目，或明确 all=true 上架全部")
     if running("cloud"):
         raise HTTPException(409, "云端任务进行中，请等当前任务结束")
 
@@ -829,8 +839,8 @@ def api_cloud_publish(body: dict = Body(...)):
         finally:
             conn.close()
 
-    scope = len(ids) or ("栏目" if column else ("账号" if sec else "全部待发布"))
-    job = spawn("cloud-publish", _run, note=f"准备发布：{scope}", job_ref=ref)
+    scope = len(ids) or ("栏目" if column else ("账号" if sec else "全部"))
+    job = spawn("cloud-publish", _run, note=f"准备上架：{scope}", job_ref=ref)
     return {"job_id": job["id"], "scope": scope}
 
 
@@ -879,6 +889,7 @@ def api_cloud_sync(body: dict = Body(...)):
     def _run():
         conn = db.connect()
         try:
+            cloud_release.reconcile_offline(conn)
             meta = cloud_release.push_meta(conn, reporter=_cloud_reporter(ref))
             rel = cc.call_content("pushRelease",
                                   note=str(body.get("note") or "只同步元数据")[:180],
@@ -925,15 +936,57 @@ def api_cloud_covers(body: dict = Body(...)):
 
 @app.post("/api/cloud/offline")
 def api_cloud_offline(body: dict = Body(...)):
-    """下架：默认只置 enabled=false，purge_files=true 才删云存储文件"""
+    """
+    下架：线上只置 enabled=false，purge_files=true 才删云存储文件
+
+    ids 勾选单集，column_id / sec_user_id 直接按整个栏目或账号下架。
+    """
     import cloud_release
 
     ids = [str(i) for i in (body.get("ids") or [])]
-    if not ids:
-        raise HTTPException(400, "请勾选要下架的条目")
+    column = body.get("column_id") or ""
+    sec = body.get("sec_user_id") or ""
+    if not ids and not column and not sec:
+        raise HTTPException(400, "请勾选要下架的条目，或指定栏目/账号")
     conn = db.connect()
     try:
-        return cloud_release.offline(conn, ids, purge_files=bool(body.get("purge_files")))
+        return cloud_release.offline(conn, ids, purge_files=bool(body.get("purge_files")),
+                                     column_id=column, sec_user_id=sec)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(502, str(e)[:300])
+    finally:
+        conn.close()
+
+
+@app.post("/api/cloud/reconcile")
+def api_cloud_reconcile():
+    """把本地的下架标记和线上 enabled 对齐一次，只读线上、不改云端"""
+    import cloud_release
+
+    conn = db.connect()
+    try:
+        return cloud_release.reconcile_offline(conn)
+    finally:
+        conn.close()
+
+
+@app.post("/api/cloud/restore")
+def api_cloud_restore(body: dict = Body(...)):
+    """
+    重新上架：解除本地下架标记并同步元数据，不重传音频和正文。
+
+    ids 勾选单集，column_id / sec_user_id 按整个栏目或账号恢复。
+    """
+    import cloud_release
+
+    ids = [str(i) for i in (body.get("ids") or [])]
+    column = body.get("column_id") or ""
+    sec = body.get("sec_user_id") or ""
+    if not ids and not column and not sec:
+        raise HTTPException(400, "请勾选要恢复的条目，或指定栏目/账号")
+    conn = db.connect()
+    try:
+        return cloud_release.restore(conn, ids, column_id=column, sec_user_id=sec)
     except Exception as e:  # noqa: BLE001
         raise HTTPException(502, str(e)[:300])
     finally:
@@ -942,7 +995,7 @@ def api_cloud_offline(body: dict = Body(...)):
 
 @app.post("/api/cloud/retract")
 def api_cloud_retract(body: dict = Body(...)):
-    """把某集从线上撤回本地态（清云端地址，下次发布会重推）"""
+    """把某集从线上撤回本地态（清云端地址，下次上架会重推）"""
     ids = [str(i) for i in (body.get("ids") or [])]
     if not ids:
         raise HTTPException(400, "请勾选条目")

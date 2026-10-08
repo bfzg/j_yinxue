@@ -1,10 +1,12 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
+import { BUILD_STAMP } from '@/utils/buildInfo'
 import ColumnFolder from './components/ColumnFolder.vue'
 import HomeSearchBar from './components/HomeSearchBar.vue'
 import { useAudioPlayerState } from '@/composables/useAudioPlayer'
 import { useTopInset } from '@/composables/useSafeArea'
 import { ensureSiteData, useSiteData } from '@/composables/useSiteData'
+import { useSiteRefresh } from '@/composables/useSiteRefresh'
 import type { Column } from '@/types/column'
 
 defineOptions({
@@ -28,15 +30,35 @@ const { site } = useSiteData()
 const audioState = useAudioPlayerState()
 const topInset = useTopInset(2)
 
+// 合集网格在 scroll-view 里滚动，页面本身不滚，原生页面级下拉刷新不会触发，
+// 所以用 scroll-view 自带的 refresher
+
+const { refreshing, runRefresh } = useSiteRefresh()
+
 /** 单篇桶没有系列感，排在所有合集后面 */
 function isLoose(column: Column) {
   return (column.name || '').includes('单篇')
+}
+
+/**
+ * 合集里一集都不剩就别再挂卡片。
+ * 云端 columns 接口已经过滤过，这里再挡一道，防的是旧版云函数还没重传。
+ */
+function isLive(column: Column) {
+  const count = column.nEpisodes ?? column.episodes?.length
+  if (count === undefined || count === null) {
+    return true
+  }
+  return Number(count) > 0
 }
 
 const columns = computed<Column[]>(() => {
   const keyword = searchText.value.trim().toLowerCase()
   return site.columns
     .filter((item) => {
+      if (!isLive(item)) {
+        return false
+      }
       if (!keyword) {
         return true
       }
@@ -48,6 +70,9 @@ const columns = computed<Column[]>(() => {
 const episodeCount = computed(() =>
   columns.value.reduce((acc, item) => acc + (item.nEpisodes ?? item.episodes?.length ?? 0), 0),
 )
+
+// 只在开发包里露出构建时间，用来确认真机跑的是不是最新一版
+const buildStamp = import.meta.env.DEV ? BUILD_STAMP : ''
 
 // 有音频播放时增加底部间距，防止最后一排被浮层遮挡
 const gridPaddingClass = computed(() => {
@@ -78,17 +103,31 @@ onShow(() => {
       </view>
     </view>
 
-    <scroll-view class="content-scroll" scroll-y :show-scrollbar="false">
+    <scroll-view
+      class="content-scroll" scroll-y :show-scrollbar="false" refresher-enabled
+      :refresher-triggered="refreshing" refresher-default-style="black" refresher-background="#f3f5f2"
+      :refresher-threshold="70" @refresherrefresh="runRefresh"
+    >
       <view v-if="columns.length" class="folder-grid px-4" :class="gridPaddingClass">
-        <view v-for="column in columns" :key="column.id" class="grid-item">
+        <view v-for="column in columns" :key="`${column.id}:${column.cover || ''}`">
           <ColumnFolder :column="column" @open="openColumn" />
         </view>
+      </view>
+
+      <view v-else-if="site.syncing" class="empty">
+        <view class="empty-icon i-lucide-loader-circle animate-spin" />
+        <text class="empty-title">正在取内容</text>
+        <text class="empty-desc">第一次打开需要连一次云端，稍等一下。</text>
       </view>
 
       <view v-else class="empty">
         <view class="empty-icon i-lucide-folder-open" />
         <text class="empty-title">{{ searchText ? '没有匹配的合集' : '还没有上架的合集' }}</text>
         <text class="empty-desc">{{ searchText ? '换个关键词试试。' : '后台发布内容后，这里会出现按系列归好的合集。' }}</text>
+      </view>
+
+      <view v-if="buildStamp" class="build-stamp">
+        <text>{{ buildStamp }}</text>
       </view>
     </scroll-view>
   </view>
@@ -168,20 +207,20 @@ onShow(() => {
 }
 
 .folder-grid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24rpx;
   margin-top: 36rpx;
 }
 
-/* 两列网格用 margin 撑间距，小程序里 gap 兼容性不稳 */
-.grid-item {
-  width: calc(50% - 12rpx);
-  margin-right: 24rpx;
-  margin-bottom: 34rpx;
+.build-stamp {
+  padding: 10rpx 0 26rpx;
+  text-align: center;
 }
 
-.grid-item:nth-child(2n) {
-  margin-right: 0;
+.build-stamp text {
+  color: #b6beb8;
+  font-size: 20rpx;
 }
 
 .empty {

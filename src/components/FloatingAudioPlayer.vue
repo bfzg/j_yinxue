@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { computed } from 'vue'
+import { site } from '@/composables/useSiteData'
 import { useAudioPlayerWithPlaylist } from '@/composables/useAudioPlayer'
 
 defineOptions({
@@ -16,6 +18,40 @@ const {
   seek,
   destroy,
 } = useAudioPlayerWithPlaylist()
+
+/**
+ * 正在听的这篇对应的文章 id。
+ * 有播放列表时直接取当前条目；单篇直链起播就按音频地址回查一次。
+ */
+const playingArticleId = computed(() => {
+  const item = currentPlaylistItem.value as any
+  if (item?.id) {
+    return String(item.id)
+  }
+  const src = state.src
+  if (!src) {
+    return ''
+  }
+  const hit = site.playlist.find(one => one.audioUrl === src)
+    || site.articles.find(one => one.audioUrl === src)
+  return hit ? String(hit.id) : ''
+})
+
+/** 点标题去看正文，已经在那篇里就不重复压栈 */
+function openArticle() {
+  const id = playingArticleId.value
+  if (!id) {
+    return
+  }
+  const pages = getCurrentPages() as any[]
+  const top = pages[pages.length - 1]
+  const route = String(top?.route || '')
+  const currentId = decodeURIComponent(String(top?.options?.id || ''))
+  if (route === 'pages/article/article' && currentId === id) {
+    return
+  }
+  uni.navigateTo({ url: `/pages/article/article?id=${encodeURIComponent(id)}` })
+}
 
 function formatTime(value: number) {
   if (!Number.isFinite(value) || value < 0) {
@@ -47,9 +83,10 @@ function onClose() {
     <view class="player-body">
       <!-- 左侧：标题 + 时间 -->
       <view class="player-info">
-        <view class="player-title-row">
+        <view class="player-title-row" @tap.stop="openArticle">
           <text class="player-title">{{ currentPlaylistItem?.title || '听文章' }}</text>
           <text v-if="state.error" class="player-error">{{ state.error }}</text>
+          <text v-else-if="state.hint" class="player-error">{{ state.hint }}</text>
         </view>
         <text class="player-time">
           {{ formatTime(state.currentTime) }} / {{ formatTime(state.duration) }}
@@ -58,32 +95,19 @@ function onClose() {
 
       <!-- 右侧：控制按钮 -->
       <view class="player-controls">
-        <view
-          class="ctrl-btn"
-          :class="{ disabled: !hasPrev || state.loading }"
-          @tap="playPrev"
-        >
+        <view class="ctrl-btn" :class="{ disabled: !hasPrev || state.loading }" @tap="playPrev">
           <view class="ctrl-icon i-lucide-skip-back" />
         </view>
 
-        <view
-          class="play-btn"
-          :class="{ disabled: state.loading }"
-          @tap="toggle"
-        >
+        <view class="play-btn" :class="{ disabled: state.loading }" @tap="toggle">
           <view
-            class="play-icon"
-            :class="state.loading
+            class="play-icon" :class="state.loading
               ? 'i-lucide-loader-circle animate-spin'
               : state.playing ? 'i-lucide-pause' : 'i-lucide-play'"
           />
         </view>
 
-        <view
-          class="ctrl-btn"
-          :class="{ disabled: !hasNext || state.loading }"
-          @tap="playNext"
-        >
+        <view class="ctrl-btn" :class="{ disabled: !hasNext || state.loading }" @tap="playNext">
           <view class="ctrl-icon i-lucide-skip-forward" />
         </view>
       </view>
@@ -92,20 +116,11 @@ function onClose() {
     <!-- 进度条 -->
     <view class="player-progress">
       <slider
-        class="audio-slider"
-        :min="0"
-        :max="state.duration || 0"
-        :value="state.currentTime"
-        :step="1"
-        :disabled="!state.duration || state.loading"
-        active-color="#1f5146"
-        background-color="#dfe6e1"
-        :block-size="24"
+        class="audio-slider" :min="0" :max="state.duration || 0" :value="state.currentTime" :step="1"
+        :disabled="!state.duration || state.loading" active-color="#1f5146" background-color="#dfe6e1" :block-size="24"
         @change="onSliderChange"
       />
     </view>
-
-
   </view>
 </template>
 
@@ -150,6 +165,17 @@ function onClose() {
   display: flex;
   gap: 16rpx;
   align-items: center;
+}
+
+.player-title-row:active {
+  opacity: 0.6;
+}
+
+.title-arrow {
+  flex-shrink: 0;
+  width: 26rpx;
+  height: 26rpx;
+  color: #a8b1aa;
 }
 
 .player-title {
@@ -226,6 +252,4 @@ function onClose() {
 .audio-slider {
   margin: 0;
 }
-
-
 </style>

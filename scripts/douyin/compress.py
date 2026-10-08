@@ -125,9 +125,11 @@ def compact_one(aweme_id: str, prof: dict, keep_source: bool,
         dst_stage.unlink(missing_ok=True)
         return {"aweme_id": aweme_id,
                 "error": f"时长对不上({dur_old / 1000:.0f}s→{dur_new / 1000:.0f}s)，保留原文件"}
-    if after >= before:
+    # 容器变了（如 .m4a→.mp3）优先保证格式兼容，允许体积膨胀 100%
+    max_ratio = 1.0 if src.suffix == "." + prof["ext"] else 2.0
+    if after > before * max_ratio:
         dst_stage.unlink(missing_ok=True)
-        return {"aweme_id": aweme_id, "skipped": "重编后没变小，保留原文件",
+        return {"aweme_id": aweme_id, "skipped": "重编后体积膨胀太多，保留原文件",
                 "before": before, "after": before, "saved": 0}
 
     # 落到正式文件名 {aweme_id}.{ext}
@@ -149,7 +151,7 @@ def compact_one(aweme_id: str, prof: dict, keep_source: bool,
         print(f"  [瘦身] {aweme_id} {before / 1048576:.1f}MB → "
               f"{after / 1048576:.1f}MB  ({reason})", flush=True)
     return {"aweme_id": aweme_id, "before": before, "after": after,
-            "saved": before - after, "reason": reason}
+            "saved": max(0, before - after), "reason": reason}
 
 
 def _targets(conn, ids=None, limit: int = 0, column: str = "",
@@ -226,7 +228,8 @@ def run(profile: str = "", limit: int = 0, ids: Optional[list[str]] = None,
                     continue
                 if r.get("error"):
                     fail.append(f"{r['aweme_id']}: {r['error']}")
-                elif r.get("saved"):
+                # fix: count format conversions even when mp3 is larger
+                if r.get("reason") or r.get("saved", 0) > 0:
                     ok += 1
                     stats.append(r)
                 if verbose and (ok % 25 == 0) and stats:
@@ -239,7 +242,7 @@ def run(profile: str = "", limit: int = 0, ids: Optional[list[str]] = None,
         out = {"profile": prof["name"], "converted": ok, "failed": fail[:20],
                "fail_count": len(fail), "before_gb": round(before / 1073741824, 3),
                "after_gb": round(after / 1073741824, 3),
-               "saved_gb": round(saved / 1073741824, 3),
+               "saved_gb": round(max(saved, 0) / 1073741824, 3),
                "avg_before_mb": round(before / ok / 1048576, 2) if ok else 0,
                "avg_after_mb": round(after / ok / 1048576, 2) if ok else 0,
                "seconds": round(time.time() - t0)}

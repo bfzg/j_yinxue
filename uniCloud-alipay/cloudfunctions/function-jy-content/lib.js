@@ -1,4 +1,4 @@
-'use strict';
+'use strict'
 
 /**
  * 数据层公共件：集合名、字段白名单、分页参数
@@ -13,43 +13,79 @@ const COLLECTIONS = {
   episodes: 'jy_episodes',
   meta: 'jy_meta',
   releases: 'jy_releases',
-};
+}
 
-const META_ID = 'site';
+const META_ID = 'site'
 
 /** 正文不进库，只存文件 URL；库里只放列表页要用的元数据 */
 const EPISODE_FIELDS = [
-  'id', 'awemeId', 'title', 'summary', 'category', 'cover', 'publishedAt',
-  'articleUrl', 'audioUrl', 'enabled', 'sort', 'accountId', 'accountName',
-  'columnId', 'columnName', 'episodeNo', 'episodeTotal', 'sourceUrl',
-  'duration', 'wordCount',
-];
+  'id',
+  'awemeId',
+  'title',
+  'summary',
+  'category',
+  'cover',
+  'publishedAt',
+  'articleUrl',
+  'audioUrl',
+  'enabled',
+  'sort',
+  'accountId',
+  'accountName',
+  'columnId',
+  'columnName',
+  'episodeNo',
+  'episodeTotal',
+  'sourceUrl',
+  'duration',
+  'wordCount',
+]
 
 const EPISODE_EXTRA_FIELDS = [
-  'audioFileId', 'articleFileId', 'syncedAt', 'status', 'channel',
-];
+  'audioFileId',
+  'articleFileId',
+  'syncedAt',
+  'status',
+  'channel',
+]
 
 const COLUMN_FIELDS = [
-  'id', 'name', 'accountId', 'accountName', 'cover', 'sort',
-  'episodeTotal', 'nEpisodes',
-];
+  'id',
+  'name',
+  'accountId',
+  'accountName',
+  'cover',
+  'sort',
+  'episodeTotal',
+  'nEpisodes',
+]
 
 const ACCOUNT_FIELDS = [
-  'id', 'slug', 'name', 'style', 'enabled', 'maxItems',
-  'awemeCount', 'scannedItems', 'updatedAt',
-];
+  'id',
+  'slug',
+  'name',
+  'style',
+  'enabled',
+  'maxItems',
+  'awemeCount',
+  'scannedItems',
+  'updatedAt',
+]
 
 const DEFAULT_APP = {
-  name: '九哥隐学', author: '九哥', cover: '', description: '九哥原创文章阅读',
-};
-const DEFAULT_SETTINGS = { autoplayNext: true, playMode: 'sequence' };
+  name: '九哥隐学',
+  author: '九哥',
+  cover: '',
+  description: '九哥原创文章阅读',
+}
+const DEFAULT_SETTINGS = { autoplayNext: true, playMode: 'sequence' }
 
 function db() {
-  return uniCloud.database();
+  return uniCloud.database()
 }
 
 function databaseCmd() {
-  return uniCloud.database().command;
+  return uniCloud.database().command
 }
 
 /**
@@ -59,154 +95,155 @@ function databaseCmd() {
  * 这里先探测再缓存，探测不到就退回逐条 doc(id).get()，保证线上一绝不会
  * 因为 "in_ is not a function" 整个接口挂掉。
  */
-let _inMode = null;
+let _inMode = null
 
 function inMode() {
   if (_inMode === null) {
-    const cmd = databaseCmd() || {};
-    if (typeof cmd['in'] === 'function') {
-      _inMode = 'in';
-    } else if (typeof cmd['in_'] === 'function') {
-      _inMode = 'in_';
-    } else {
-      _inMode = 'none';
+    const cmd = databaseCmd() || {}
+    if (typeof cmd.in === 'function') {
+      _inMode = 'in'
+    }
+    else if (typeof cmd.in_ === 'function') {
+      _inMode = 'in_'
+    }
+    else {
+      _inMode = 'none'
     }
   }
-  return _inMode;
+  return _inMode
 }
 
 function idInCmd(list) {
-  const mode = inMode();
+  const mode = inMode()
   if (mode === 'none') {
-    return null;
+    return null
   }
-  return databaseCmd()[mode](list);
+  return databaseCmd()[mode](list)
 }
 
-const IN_CHUNK = 100;
-const DOC_CHUNK = 8;
+const IN_CHUNK = 100
+const DOC_CHUNK = 8
 
 async function fetchRowsByIn(collName, ids) {
-  const rows = [];
+  const rows = []
   for (let i = 0; i < ids.length; i += IN_CHUNK) {
-    const chunk = ids.slice(i, i + IN_CHUNK);
-    const res = await db().collection(collName)
-      .where({ _id: idInCmd(chunk) })
-      .limit(chunk.length)
-      .get();
-    (res.data || []).forEach(doc => rows.push(doc));
+    const chunk = ids.slice(i, i + IN_CHUNK)
+    const res = await db().collection(collName).where({ _id: idInCmd(chunk) }).limit(chunk.length).get();
+    (res.data || []).forEach(doc => rows.push(doc))
   }
-  return rows;
+  return rows
 }
 
 /** 兜底路径：小并发逐条取，单集合最多几百个 id，不会顶到函数超时 */
 async function fetchRowsByDoc(collName, ids) {
-  const rows = [];
+  const rows = []
   for (let i = 0; i < ids.length; i += DOC_CHUNK) {
-    const group = ids.slice(i, i + DOC_CHUNK);
+    const group = ids.slice(i, i + DOC_CHUNK)
     const res = await Promise.all(group.map(id =>
-      db().collection(collName).doc(id).get().catch(() => null)));
+      db().collection(collName).doc(id).get().catch(() => null)))
     res.forEach((one) => {
-      const doc = one && one.data && one.data[0];
+      const doc = one && one.data && one.data[0]
       if (doc) {
-        rows.push(doc);
+        rows.push(doc)
       }
-    });
+    })
   }
-  return rows;
+  return rows
 }
 
 /** 返回 { rows, fetchMode }，fetchMode 一路带到响应里，方便线上直接看走的是哪条路 */
 async function docsByIds(collName, rawIds) {
-  const ids = [];
+  const ids = []
   const seen = {};
   (rawIds || []).forEach((one) => {
-    const s = String(one || '');
+    const s = String(one || '')
     if (s && !seen[s]) {
-      seen[s] = 1;
-      ids.push(s);
+      seen[s] = 1
+      ids.push(s)
     }
-  });
+  })
   if (!ids.length) {
-    return { rows: [], fetchMode: 'empty' };
+    return { rows: [], fetchMode: 'empty' }
   }
   if (inMode() !== 'none') {
     try {
-      return { rows: await fetchRowsByIn(collName, ids), fetchMode: inMode() };
-    } catch (err) {
-      console.warn('[' + collName + '] in 查询失败，改逐条取:', err && err.message);
+      return { rows: await fetchRowsByIn(collName, ids), fetchMode: inMode() }
     }
-  } else {
-    console.warn('[' + collName + '] 运行时没有 in 命令，用逐条取');
+    catch (err) {
+      console.warn(`[${collName}] in 查询失败，改逐条取:`, err && err.message)
+    }
   }
-  return { rows: await fetchRowsByDoc(collName, ids), fetchMode: 'doc' };
+  else {
+    console.warn(`[${collName}] 运行时没有 in 命令，用逐条取`)
+  }
+  return { rows: await fetchRowsByDoc(collName, ids), fetchMode: 'doc' }
 }
 
 /** 库里缺哪条就跳过哪条，顺序永远按传进来的 ids */
 function rowsToMap(rows) {
   const byId = {};
   (rows || []).forEach((row) => {
-    byId[String(row._id || row.id)] = row;
-  });
-  return byId;
+    byId[String(row._id || row.id)] = row
+  })
+  return byId
 }
 
 /** 以 _id 幂等覆盖整条文档 */
 async function putDoc(name, id, data) {
-  const clean = Object.assign({}, data);
-  delete clean._id;
-  await db().collection(name).doc(id).set(clean);
-  return id;
+  const clean = Object.assign({}, data)
+  delete clean._id
+  await db().collection(name).doc(id).set(clean)
+  return id
 }
 
 async function putMany(name, rows) {
-  const ids = rows.map(row => row.id || row._id || row.slug);
+  const ids = rows.map(row => row.id || row._id || row.slug)
   for (const row of rows) {
-    await putDoc(name, row.id || row._id || row.slug, row);
+    await putDoc(name, row.id || row._id || row.slug, row)
   }
-  return ids.length;
+  return ids.length
 }
 
 /** 去掉 undefined，避免 set 时把线上已有字段抹成 null */
 function compact(obj) {
-  const out = {};
+  const out = {}
   Object.keys(obj || {}).forEach((key) => {
     if (obj[key] !== undefined && obj[key] !== null) {
-      out[key] = obj[key];
+      out[key] = obj[key]
     }
-  });
-  return out;
+  })
+  return out
 }
 
 function pick(src, fields) {
-  const out = {};
+  const out = {}
   fields.forEach((key) => {
     if (src && src[key] !== undefined) {
-      out[key] = src[key];
+      out[key] = src[key]
     }
-  });
-  return out;
+  })
+  return out
 }
 
 function numOr(value, fallback) {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : fallback;
+  const n = Number(value)
+  return Number.isFinite(n) ? n : fallback
 }
 
 /** 分页参数收口：最多 500 条一页，防止一次拉爆响应体 */
 function pageParams(query, body, defaultLimit) {
-  const limit = Math.min(numOr(body.limit, numOr(query.limit, defaultLimit || 200)), 500);
-  const offset = Math.max(numOr(body.offset, numOr(query.offset, 0)), 0);
-  return { limit: limit, offset: offset };
+  const limit = Math.min(numOr(body.limit, numOr(query.limit, defaultLimit || 200)), 500)
+  const offset = Math.max(numOr(body.offset, numOr(query.offset, 0)), 0)
+  return { limit, offset }
 }
 
 async function getMeta() {
-  const res = await db().collection(COLLECTIONS.meta).doc(META_ID).get();
-  return (res.data && res.data[0]) || null;
+  const res = await db().collection(COLLECTIONS.meta).doc(META_ID).get()
+  return (res.data && res.data[0]) || null
 }
 
 async function ensureMeta() {
-  let meta = await getMeta();
+  let meta = await getMeta()
   if (!meta) {
     const doc = {
       _id: META_ID,
@@ -215,19 +252,20 @@ async function ensureMeta() {
       dataVersion: 0,
       updatedAt: Date.now(),
       counts: { episodes: 0, columns: 0 },
-    };
-    await db().collection(COLLECTIONS.meta).add(doc);
-    meta = doc;
+    }
+    await db().collection(COLLECTIONS.meta).add(doc)
+    meta = doc
   }
-  return meta;
+  return meta
 }
 
 async function countOf(name) {
   try {
-    const res = await db().collection(name).where({ _id: uniCloud.database().command.exists(true) }).count();
-    return numOr(res && res.total, 0);
-  } catch (err) {
-    return -1;
+    const res = await db().collection(name).where({ _id: uniCloud.database().command.exists(true) }).count()
+    return numOr(res && res.total, 0)
+  }
+  catch (err) {
+    return -1
   }
 }
 
@@ -254,4 +292,4 @@ module.exports = {
   getMeta,
   ensureMeta,
   countOf,
-};
+}

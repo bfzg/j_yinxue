@@ -179,7 +179,7 @@ def cmd_process(args):
 
 
 def cmd_articles(args):
-    """抹掉存量文章末尾的旧尾注；文件一改 mtime 变新，下次发布会自动重推正文"""
+    """抹掉存量文章末尾的旧尾注；文件一改 mtime 变新，下次上架会自动重推正文"""
     import article_formatter as af
 
     conn = _conn()
@@ -197,7 +197,7 @@ def cmd_publish(args):
 
 
 def cmd_cloud(args):
-    """uniCloud 云端发布：传文件 → 写云数据库 → dataVersion +1"""
+    """uniCloud 云端上架：传文件 → 写云数据库 → dataVersion +1"""
     import cloud_client as cc
     import cloud_release
     import pipeline_db as db

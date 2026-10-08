@@ -98,6 +98,33 @@ AUDIO_PROFILES = {
         "kbps": 33,
         "note": "体积 1/5，气音略闷，长串讲够用",
     },
+    "mp3_64_mono": {
+        "label": "MP3 64k 单声道（推荐平衡）",
+        "short": "MP3 64k 单声道",
+        "ext": "mp3",
+        "media_type": "audio/mpeg",
+        "ffmpeg": ["-ac", "1", "-ar", "44100", "-c:a", "libmp3lame", "-b:a", "64k"],
+        "kbps": 64,
+        "note": "mp3 兼容格式，体积约 5MB/11分钟，小程序全设备支持",
+    },
+    "mp3_48_mono": {
+        "label": "MP3 48k 单声道（推荐）",
+        "short": "MP3 48k 单声道",
+        "ext": "mp3",
+        "media_type": "audio/mpeg",
+        "ffmpeg": ["-ac", "1", "-ar", "32000", "-c:a", "libmp3lame", "-b:a", "48k"],
+        "kbps": 48,
+        "note": "体积约 4MB/11分钟，接近原 m4a 大小",
+    },
+    "mp3_32_mono": {
+        "label": "MP3 32k 单声道（最省体积）",
+        "short": "MP3 32k 单声道",
+        "ext": "mp3",
+        "media_type": "audio/mpeg",
+        "ffmpeg": ["-ac", "1", "-ar", "24000", "-c:a", "libmp3lame", "-b:a", "32k"],
+        "kbps": 32,
+        "note": "体积约 2.6MB/11分钟，纯语音可接受",
+    },
     "mp3_96_mono": {
         "label": "MP3 96k 单声道",
         "short": "MP3 96k 单声道",
@@ -117,7 +144,7 @@ AUDIO_PROFILES = {
         "note": "改造前的基准，体积最大，只用于回滚",
     },
 }
-AUDIO_PROFILE_DEFAULT = "aac40_mono"
+AUDIO_PROFILE_DEFAULT = "mp3_48_mono"
 AUDIO_PROFILE = (os.getenv("DY_AUDIO_PROFILE", "")
                  or _read_settings().get("audio_profile", "")
                  or AUDIO_PROFILE_DEFAULT)

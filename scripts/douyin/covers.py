@@ -129,8 +129,10 @@ def push_unit(conn, u: dict, *, force: bool = False, verify: bool = True,
     if not src:
         return {**out, "skipped": True, "reason": "没有可用封面"}
     if not force and out["cover"].startswith("https://") and \
-       u.get("cover_source_url") == src:
+       cr.is_permanent(out["cover"]) and cr.url_readable(out["cover"]):
         return {**out, "skipped": True, "cached": True, "reason": "封面未变"}
+    # 库里那条地址探不通（存储被清空、公共读没开），下面照常重传，
+    # 本地还留着那张图，不必再回抖音抓一次
 
     account_slug = cr._safe(u.get("account_slug") or "", "unknown")
     col_slug = cr._safe(u.get("slug") or u["column_id"], "col")

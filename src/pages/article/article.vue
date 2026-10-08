@@ -6,9 +6,11 @@ import ArticleBody from './components/ArticleBody.vue'
 import ArticleHeader from './components/ArticleHeader.vue'
 import ArticleTopbar from './components/ArticleTopbar.vue'
 import { loadArticleText } from '@/api/content'
-import { setPlaylist, useAudioPlayerWithPlaylist } from '@/composables/useAudioPlayer'
+import { playAudioDirect, setPlaylist, useAudioPlayerWithPlaylist } from '@/composables/useAudioPlayer'
 import { useCapsuleInset, useTopInset } from '@/composables/useSafeArea'
 import { ensureSiteData, useSiteData } from '@/composables/useSiteData'
+import { useSiteRefresh } from '@/composables/useSiteRefresh'
+import { episodeDisplayNo, sortByEpisodeOrder } from '@/utils/episodeOrder'
 import type { Article, ArticleBlock } from '@/types/article'
 import type { PlaylistItem } from '@/composables/useAudioPlayer'
 
@@ -22,6 +24,10 @@ definePage({
     navigationBarTitleText: '',
     navigationBarBackgroundColor: '#ffffff',
     navigationBarTextStyle: 'black',
+    // 阅读页是页面级滚动，用原生下拉刷新，指示器和白底页面衔接最自然
+    enablePullDownRefresh: true,
+    backgroundColor: '#ffffff',
+    backgroundTextStyle: 'dark',
   },
 })
 
@@ -47,6 +53,8 @@ interface PlaylistRecord {
   audioUrl: string
   duration?: number
   sort?: number
+  rank?: number
+  episodeNo?: number
   enabled?: boolean
   columnId?: string
 }
@@ -57,12 +65,8 @@ function toPlaylistItem(item: { id: string, title: string, audioUrl: string, dur
   return { id: item.id, title: item.title, audioUrl: item.audioUrl, duration: item.duration }
 }
 
-function bySort(a: { sort?: number }, b: { sort?: number }) {
-  return (a.sort || 0) - (b.sort || 0)
-}
-
 /**
- * 连播列表默认就是本篇所在的合集，按合集顺序播到最后一集为止。
+ * 连播列表就是本篇所在的合集，顺序和合集列表页从上到下一模一样，播到最后一集为止。
  * 文章不在 playlist 里（刚发布、字段缺失）时补上自己，避免点了没反应。
  */
 const playlistItems = computed<PlaylistItem[]>(() => {
@@ -81,10 +85,12 @@ const playlistItems = computed<PlaylistItem[]>(() => {
       audioUrl: current.audioUrl,
       duration: current.duration,
       sort: current.sort,
+      rank: current.rank,
+      episodeNo: current.episodeNo,
       columnId: current.columnId,
     })
   }
-  return list.sort(bySort).map(toPlaylistItem)
+  return sortByEpisodeOrder(list).map(toPlaylistItem)
 })
 
 function startPlay() {
@@ -92,12 +98,14 @@ function startPlay() {
     return
 
   const index = playlistItems.value.findIndex(item => item.id === article.value!.id)
+
+  // 文章不在合集里，单独听这一篇
   if (index === -1) {
-    uni.showToast({ title: '这一集暂时没有音频', icon: 'none' })
+    playAudioDirect(article.value!.audioUrl, article.value!.title)
     return
   }
 
-  // 正在播放当前文章 → 暂停/恢复
+  // 已经是这一篇，点一下就暂停/继续
   if (audioState.started && audioState.src === article.value.audioUrl) {
     toggle()
     return
@@ -163,13 +171,35 @@ function retryLoad() {
   }
 }
 
+// 下拉刷新：站点数据强制更新后重取正文，正文地址带内容指纹，改版重推也能拿到新文件
+const { runRefresh } = useSiteRefresh(() => loadArticle())
+
+onPullDownRefresh(async () => {
+  await runRefresh()
+  uni.stopPullDownRefresh()
+})
+
+// 合集里只有一集时不报集号，多篇才挂「第 N 集」，序号按合集内位次
+const columnEpisodeCount = computed(() => {
+  const columnId = article.value?.columnId || ''
+  if (!columnId) {
+    return 0
+  }
+  const matched = site.columns.find(item => item.id === columnId)
+  if (matched?.nEpisodes != null) {
+    return matched.nEpisodes
+  }
+  return site.playlist.filter(item => (item.columnId || '') === columnId && item.enabled !== false).length
+})
+
 // 栏目标题优先展示，例如「王立群读汉武帝 · 第 35 集」
 const columnLabel = computed(() => {
   const a = article.value
   if (!a?.columnName) {
     return a?.category || ''
   }
-  return a.episodeNo ? `${a.columnName} · 第 ${a.episodeNo} 集` : a.columnName
+  const no = episodeDisplayNo(a)
+  return no > 1 || columnEpisodeCount.value > 1 ? `${a.columnName} · 第 ${no} 集` : a.columnName
 })
 
 onLoad(async (options) => {

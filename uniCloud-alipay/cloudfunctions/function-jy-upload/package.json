@@ -2,6 +2,6 @@
   "name": "function-jy-upload",
   "version": "1.1.0",
   "description": "九哥隐学云存储上传入口：/jy-upload，只给本地发布脚本调用",
-  "dependencies": {},
-  "main": "index.js"
+  "main": "index.js",
+  "dependencies": {}
 }

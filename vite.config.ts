@@ -144,6 +144,8 @@ export default defineConfig(({ command, mode }) => {
     ],
     define: {
       __VITE_APP_PROXY__: JSON.stringify(VITE_APP_PROXY_ENABLE),
+      // 打包时间戳，用来在真机日志里确认跑的是不是最新一版
+      __BUILD_STAMP__: JSON.stringify(dayjs().format('MM-DD HH:mm')),
     },
     css: {
       postcss: {

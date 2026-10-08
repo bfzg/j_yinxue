@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
-import { formatDate, formatDuration } from '@/utils/format'
+import { formatDate } from '@/utils/format'
 import type { ColumnEpisode } from '@/types/column'
 
 defineOptions({
@@ -17,10 +17,8 @@ const emit = defineEmits<{
   (e: 'open', episode: ColumnEpisode): void
 }>()
 
-const orderLabel = computed(() => {
-  const no = Number(props.episode.episodeNo || 0)
-  return String(no || props.index + 1).padStart(2, '0')
-})
+// 云端已经按合集集序排好，序号就是这一行的位次：一个合集从 01 开始连号
+const orderLabel = computed(() => String(props.index + 1).padStart(2, '0'))
 </script>
 
 <template>

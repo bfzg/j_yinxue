@@ -7,6 +7,8 @@ export default uniHelper({
   ignores: [
     // 忽略uni_modules目录
     '**/uni_modules/',
+    // 抖音采集流水线是独立的 Python 工具，里面的小后台面板不套 uni-app 这套规则
+    'scripts/',
     // 忽略原生插件目录
     '**/nativeplugins/',
     'dist',

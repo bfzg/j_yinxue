@@ -4,6 +4,7 @@ import EpisodeRow from './components/EpisodeRow.vue'
 import { useAudioPlayerState } from '@/composables/useAudioPlayer'
 import { useCapsuleInset, useTopInset } from '@/composables/useSafeArea'
 import { ensureSiteData, findColumn, loadColumnEpisodes, useSiteData } from '@/composables/useSiteData'
+import { useSiteRefresh } from '@/composables/useSiteRefresh'
 import type { Column, ColumnEpisode } from '@/types/column'
 
 defineOptions({
@@ -79,6 +80,12 @@ async function loadEpisodes() {
   }
 }
 
+// 下拉刷新：先强制回云端对齐站点数据，再重取这个合集的分集
+const { refreshing, runRefresh } = useSiteRefresh(async () => {
+  coverFailed.value = false
+  await loadEpisodes()
+})
+
 onLoad(async (options) => {
   columnId.value = options?.id ? decodeURIComponent(String(options.id)) : ''
   await ensureSiteData()
@@ -95,7 +102,11 @@ onLoad(async (options) => {
       <text class="topbar-title">{{ column.name }}</text>
     </view>
 
-    <scroll-view class="content-scroll" scroll-y :show-scrollbar="false">
+    <scroll-view
+      class="content-scroll" scroll-y :show-scrollbar="false"
+      refresher-enabled :refresher-triggered="refreshing" refresher-default-style="black"
+      refresher-background="#f3f5f2" :refresher-threshold="70" @refresherrefresh="runRefresh"
+    >
       <view class="hero px-4">
         <view class="cover-box">
           <image
@@ -128,6 +139,20 @@ onLoad(async (options) => {
         </view>
       </view>
     </scroll-view>
+  </view>
+
+  <view v-else class="page">
+    <view class="topbar" :style="topbarStyle">
+      <view class="back-btn" @tap="goBack">
+        <view class="back-icon i-lucide-chevron-left" />
+      </view>
+      <text class="topbar-title">合集</text>
+    </view>
+
+    <view class="empty">
+      <view v-if="site.syncing" class="empty-icon i-lucide-loader-circle animate-spin" />
+      <text class="empty-desc">{{ site.syncing ? '内容加载中…' : (site.error || '这个合集暂时没有内容，下拉可以重新取一次。') }}</text>
+    </view>
   </view>
 </template>
 

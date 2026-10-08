@@ -276,6 +276,18 @@ def delete_files(file_ids: Iterable[str]) -> dict:
 
 # ---------- 探活 / 线上读链路体检 ----------
 
+def probe_url(url: str, *, timeout: float = 12.0) -> str:
+    """永久直链今天到底还能不能读：库里存过 ≠ 云上还在
+
+    云存储被清空过一回，落库的封面/音频地址就全成了死链，
+    体检只看域名是看不出来的，必须伸手要一个字节。
+    返回 ok / cached（CDN 还记着失败，源头已有）/ dead。
+    """
+    import cloud_release as cr
+
+    return cr.probe_status(url, timeout=timeout)
+
+
 def health(*, attempts: int = 1) -> dict:
     """把小程序真正会踩的读动作逐个走一遍，只探活是查不出这类问题的
 
@@ -344,6 +356,17 @@ def health(*, attempts: int = 1) -> dict:
                   "detail": (f"{len(have) - len(off)}/{len(have)} 已在云存储" if have
                              else "这一轮没取到地址（上面column失败时属正常）")
                            + ("；还在用外链: " + "、".join(off) if off else "")})
+
+    # 光看域名还不够：地址在云存储域名下，也可能是被清空之后剩下的死链
+    cloud = {k: str(v) for k, v in audited.items() if v and str(v).startswith(host)}
+    verdicts = {k: probe_url(v) for k, v in cloud.items()}
+    dead = [k for k, v in verdicts.items() if v == "dead"]
+    cached = [k for k, v in verdicts.items() if v == "cached"]
+    note = (f"{len(cloud) - len(dead)}/{len(cloud)} 可直读"
+            + (f"；已失效: {'、'.join(dead)}，重新上架即可补回" if dead else "")
+            + (f"；CDN 缓存中: {'、'.join(cached)}" if cached else "")) if cloud \
+        else "这一轮没有可探的云地址"
+    steps.append({"action": "直读", "ok": not dead, "detail": note})
 
     out: dict[str, Any] = {"ok": all(one["ok"] for one in steps), "steps": steps,
                            "storageHost": host}

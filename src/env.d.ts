@@ -43,3 +43,5 @@ interface ImportMeta {
 }
 
 declare const __VITE_APP_PROXY__: 'true' | 'false'
+/** 构建时间，vite define 注入 */
+declare const __BUILD_STAMP__: string

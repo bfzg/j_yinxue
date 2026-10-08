@@ -93,6 +93,9 @@ def resolve_url(cloud_path: str, res: dict, *, verify: bool = True,
         resp = httpx_get(permanent, {"Range": "bytes=0-0"}, timeout)
         if _readable(resp.status_code):
             return permanent, ""
+        if resp.status_code == 404 and probe_status(permanent) == "cached":
+            # 源头有这张文件，只是边缘节点还缓存着上一次的 404
+            return permanent, "CDN 还缓存着旧 404，源头文件在，几分钟内自动恢复"
         warning = (f"永久地址不可直读（HTTP {resp.status_code}），"
                    f"请把云存储 {config.CLOUD_PATH_PREFIX}/ 目录设为公共读后重推")
     except Exception as e:  # noqa: BLE001
@@ -102,6 +105,46 @@ def resolve_url(cloud_path: str, res: dict, *, verify: bool = True,
         return temp, warning
     # 临时地址也拿不到时仍然返回永久地址，至少路径是对的
     return permanent, (warning or "云函数没有回传可用地址")
+
+
+def is_permanent(url: str) -> bool:
+    """落库的地址必须是不带签名的永久直链
+
+    公共读没开时 resolve_url 会退成带 ?expire_at= 的临时签名地址，
+    过一阵就 403。库里只要存过这种地址，增量推送就会一直当它「已经好了」，
+    所以判断要不要跳过，先看它是不是永久地址。
+    """
+    u = str(url or "")
+    host = config.CLOUD_STORAGE_HOST.rstrip("/")
+    return u.startswith(f"{host}/") and "?" not in u
+
+
+def url_readable(url: str, *, timeout: float = 12.0) -> bool:
+    """库里存过的地址拿到今天还能不能直读
+
+    云存储被清空过、或者公共读没开，落库的永久地址就只是个摆设：
+    封面会被跳过、上架会原样把死链推上线，所以信库之前先探一次。
+    """
+    return probe_status(url, timeout=timeout) == "ok"
+
+
+def probe_status(url: str, *, timeout: float = 12.0) -> str:
+    """ok 直读通 / cached 源头有但 CDN 还记着失败 / dead 源头也没有
+
+    我们自己那一发探测就会让边缘节点缓存住 404，紧接着的复探必然还是 404，
+    所以判死活要换一个缓存键再问一次，别让 CDN 的记性替我们把永久地址换成带签名的临时地址。
+    """
+    if not str(url).startswith("https://"):
+        return "dead"
+    bust = f"{url}{'&' if '?' in url else '?'}_probe={int(time.time() * 1000)}"
+    for target, verdict in ((url, "ok"), (bust, "cached")):
+        try:
+            resp = httpx_get(target, {"Range": "bytes=0-0"}, timeout)
+            if _readable(resp.status_code):
+                return verdict
+        except Exception:  # noqa: BLE001  单次探测失败接着试另一种
+            continue
+    return "dead"
 
 
 def httpx_get(url: str, headers: dict, timeout: float) -> Any:
@@ -294,7 +337,40 @@ def release_texts(conn, *, ids: Optional[list[str]] = None, column_id: str = "",
 
 # ---------- 元数据推送 ----------
 
-def _episode_row(conn, r: dict) -> dict:
+# ---------- 栏目内的集序 ----------
+
+def live_ids_by_column(conn) -> dict[str, list[str]]:
+    """
+    每个栏目「线上可见」的分集 id 序列，顺序就是线上的集序。
+
+    columns.episodeIds、分集行里的 episodeNo、读接口算的 rank 全部由这一个
+    函数派生，三处不可能再各排各的。已下架（offline=1）的不参与编号。
+    """
+    out: dict[str, list[str]] = {}
+    rows = conn.execute(
+        """SELECT aweme_id, column_id FROM videos
+           WHERE column_id IS NOT NULL AND column_id != ''
+             AND stage='published' AND IFNULL(offline, 0) = 0
+           ORDER BY column_id, episode_no, create_time""").fetchall()
+    for r in rows:
+        out.setdefault(r["column_id"], []).append(r["aweme_id"])
+    return out
+
+
+def episode_seq(conn) -> dict[str, int]:
+    """
+    一集在本栏目里的第几集（从 1 开始）。
+
+    注意：库里的 episode_no 是采集/AI 归类时留下的原始编号，天涯神贴那种
+    直接沿用账号列表位置的会到 275、357，只适合当排序依据和云存储文件名，
+    不能拿给用户看。线上展示一律用这个「栏目内第几集」。
+    """
+    return {aweme_id: idx
+            for ids in live_ids_by_column(conn).values()
+            for idx, aweme_id in enumerate(ids, 1)}
+
+
+def _episode_row(conn, r: dict, seq: Optional[dict[str, int]] = None) -> dict:
     import exporter
 
     row = exporter._article_item(r, r.get("article_url") or "", r.get("audio_url") or "")
@@ -307,11 +383,14 @@ def _episode_row(conn, r: dict) -> dict:
     row["status"] = r.get("stage") or ""
     row["channel"] = "douyin"
     row["syncedAt"] = int(time.time() * 1000)
-    row["enabled"] = bool(r.get("stage") == "published")
+    row["enabled"] = bool(r.get("stage") == "published") and not int(r.get("offline") or 0)
+    # 集号按栏目重排：一个合集就是 1、2、3……
+    row["episodeNo"] = (seq or {}).get(r["aweme_id"]) or int(r.get("episode_no") or 0)
     return row
 
 
 def episode_rows(conn, ids: Optional[list[str]] = None) -> list[dict]:
+    seq = episode_seq(conn)
     sql = """
       SELECT v.*, c.name AS column_name, c.slug AS column_slug,
              c.episode_total AS col_total, c.sort AS col_sort,
@@ -326,21 +405,19 @@ def episode_rows(conn, ids: Optional[list[str]] = None) -> list[dict]:
         sql += " WHERE v.aweme_id IN (" + ",".join("?" * len(ids)) + ")"
         params = tuple(ids)
     else:
-        sql += " WHERE v.stage IN ('article','published')"
+        sql += (" WHERE v.stage IN ('article','published')"
+                " AND IFNULL(v.offline, 0) = 0")
     sql += " ORDER BY a.name, c.sort, c.name, v.episode_no, v.create_time DESC"
-    return [_episode_row(conn, dict(r)) for r in conn.execute(sql, params)]
+    return [_episode_row(conn, dict(r), seq) for r in conn.execute(sql, params)]
 
 
 def column_rows(conn) -> list[dict]:
     """栏目里的 episodeIds 按集号排好，线上集序就以它为准"""
     cols = db.list_columns(conn)
+    grouped = live_ids_by_column(conn)
     out = []
     for c in cols:
-        rows = conn.execute(
-            "SELECT aweme_id, episode_no, create_time FROM videos "
-            "WHERE column_id=? AND stage='published' ORDER BY episode_no, create_time",
-            (c["column_id"],)).fetchall()
-        ids = [r["aweme_id"] for r in rows]
+        ids = grouped.get(c["column_id"], [])
         if not ids:
             continue
         acc = conn.execute("SELECT slug, name FROM accounts WHERE sec_user_id=?",
@@ -423,25 +500,34 @@ def release(conn, *, ids: Optional[list[str]] = None, column_id: str = "",
     """
     一条龙：传文件 → 推元数据 → 版本号 +1
 
-    ids / column_id / sec_user_id 任选其一缩小范围，都不传就是全部待发布条目。
+    ids / column_id / sec_user_id 任选其一缩小范围，都不传就是全部条目。
+
+    候选范围一直取到 stage='published'：线上库被清空时本地还是 published，
+    只挑 'article' 会一个都选不上，点上架就成了空操作。已在线的条目靠
+    already_pushed 跳过重传，只补元数据和版本号，不重复上传文件。
     """
-    where, params = "stage='article'", ()
+    # 线上被下架的集本地可能还记着 published，先对齐再挑人，避免一键上架把
+    # 用户手动下架的内容又推回去
+    aligned = reconcile_offline(conn)
+    live = "stage IN ('article','published') AND IFNULL(offline, 0) = 0"
+    where, params = live, ()
     if ids:
-        where = "stage IN ('article','published') AND aweme_id IN (" + ",".join("?" * len(ids)) + ")"
+        db.set_offline(conn, [str(one) for one in ids], False)
+        where = live + " AND aweme_id IN (" + ",".join("?" * len(ids)) + ")"
         params = tuple(ids)
     elif column_id:
-        where, params = "stage='article' AND column_id=?", (column_id,)
+        where, params = live + " AND column_id=?", (column_id,)
     elif sec_user_id:
-        where, params = "stage='article' AND sec_user_id=?", (sec_user_id,)
+        where, params = live + " AND sec_user_id=?", (sec_user_id,)
     order = "create_time DESC"
     targets = [r["aweme_id"] for r in db.list_videos(conn, where, params, order,
                                                     limit=limit or 5000)]
     if not targets:
-        return {"published": 0, "skipped": 0, "fails": [], "note": "没有待发布条目"}
+        return {"published": 0, "skipped": 0, "fails": [], "note": "该范围里没有已成文的条目"}
     if dry_run:
         return {"published": 0, "skipped": 0, "dryRun": True,
                 "targets": len(targets), "ids": targets[:50],
-                "note": f"预计发布 {len(targets)} 集"}
+                "note": f"预计上架 {len(targets)} 集"}
 
     ok = skipped = 0
     fails: list[str] = []
@@ -475,13 +561,15 @@ def release(conn, *, ids: Optional[list[str]] = None, column_id: str = "",
         reporter("同步元数据到云数据库")
     meta = push_meta(conn, reporter=reporter)
 
-    rel_note = note or f"{datetime.now():%m-%d %H:%M} 发布 {ok} 集（跳过 {skipped}）"
+    rel_note = note or (
+        f"{datetime.now():%m-%d %H:%M} 上架 {ok} 集"
+        + (f"，补元数据 {skipped} 集" if skipped else ""))
     rel = cc.call_content("pushRelease", note=rel_note[:200], episodes=meta["episodes"]["total"])
     db.log_event(conn, "info", "release", "",
-                 f"v{rel.get('dataVersion')} 新发 {ok} 跳过 {skipped} 失败 {len(fails)}")
+                 f"v{rel.get('dataVersion')} 新传 {ok} 已在线 {skipped} 失败 {len(fails)}")
     return {"published": ok, "skipped": skipped, "fails": fails[:30],
             "nFails": len(fails), "meta": meta, "release": rel, "covers": cov,
-            "warnings": warnings[:10] + cov.get("warnings", [])[:5],
+            "aligned": aligned, "warnings": warnings[:10] + cov.get("warnings", [])[:5],
             "note": rel_note}
 
 
@@ -508,12 +596,78 @@ def local_status(conn) -> dict:
             "cloud": cc.configured()}
 
 
-def offline(conn, ids: list[str], purge_files: bool = False) -> dict:
-    """下架：库里置 enabled=false；purge_files 才真的删云存储文件和记录"""
-    ids = [str(one) for one in ids if one]
+def remote_enabled(*, page: int = 500) -> dict[str, bool]:
+    """线上每一集到底可不可见，一次把全量元数据拉回来（读接口单页上限 500）"""
+    out: dict[str, bool] = {}
+    offset = 0
+    while True:
+        res = cc.call_content("articles", limit=page, offset=offset) or {}
+        items = res.get("items") or []
+        for one in items:
+            out[str(one.get("id"))] = bool(one.get("enabled", True))
+        total = int(res.get("total") or 0)
+        offset += len(items)
+        if not items or offset >= total:
+            break
+    return out
+
+
+def reconcile_offline(conn, *, apply: bool = True) -> dict:
+    """
+    把本地 offline 标记和线上 enabled 对齐。
+
+    「下架」这个开关上线之前，面板只在云端置了 enabled=false，本地 stage 还是
+    published。不补齐标记的话，下一次上架会把那几十集重新点亮。
+    只动线上查得到的集：文件被真删过的（线上没记录）保持本地下架状态不变。
+    """
+    if not cc.configured():
+        return {"skipped": "未配置云函数"}
+    try:
+        remote = remote_enabled()
+    except Exception as e:  # noqa: BLE001
+        return {"skipped": f"读线上状态失败：{type(e).__name__}: {str(e)[:100]}"}
+    rows = conn.execute("SELECT aweme_id, offline FROM videos WHERE stage='published'").fetchall()
+    to_off = [r["aweme_id"] for r in rows
+              if remote.get(r["aweme_id"]) is False and not int(r["offline"] or 0)]
+    to_on = [r["aweme_id"] for r in rows
+             if remote.get(r["aweme_id"]) is True and int(r["offline"] or 0)]
+    if apply and (to_off or to_on):
+        db.set_offline(conn, to_off, True)
+        db.set_offline(conn, to_on, False)
+        for aweme_id in to_off:
+            db.log_event(conn, "info", "offline", aweme_id, "对齐线上：补记下架")
+        for aweme_id in to_on:
+            db.log_event(conn, "info", "restore", aweme_id, "对齐线上：补记上架")
+    return {"offline": len(to_off), "online": len(to_on),
+            "remote": len(remote), "offlineIds": to_off[:50]}
+
+
+def offline(conn, ids: Optional[list[str]] = None, purge_files: bool = False,
+            *, column_id: str = "", sec_user_id: str = "", reporter=None) -> dict:
+    """
+    下架：线上置 enabled=false；purge_files 才真的删云存储文件和记录
+
+    ids 给单集，column_id / sec_user_id 给整个范围，三者可以叠加。
+    本地阶段保持 published，重新上架只要再同步一次元数据，不用重传文件。
+    """
+    picked = [str(one) for one in (ids or []) if one]
+    scope, params = "stage='published'", []
+    if column_id:
+        scope += " AND column_id=?"
+        params.append(column_id)
+    if sec_user_id:
+        scope += " AND sec_user_id=?"
+        params.append(sec_user_id)
+    if column_id or sec_user_id:
+        picked += [r["aweme_id"] for r in conn.execute(
+            f"SELECT aweme_id FROM videos WHERE {scope}", tuple(params)).fetchall()]
+    ids = list(dict.fromkeys(picked))
     if not ids:
-        raise cc.CloudError("没有要下架的条目")
+        raise cc.CloudError("该范围里没有已上架的条目")
+    if reporter:
+        reporter(f"下架 {len(ids)} 集" + ("（连文件一起删）" if purge_files else ""))
     res = cc.call_content("deleteEpisodes", ids=ids, purgeFiles=bool(purge_files))
+    db.set_offline(conn, ids, True)
     for aweme_id in ids:
         row = db.get_video(conn, aweme_id)
         if not row:
@@ -524,10 +678,52 @@ def offline(conn, ids: list[str], purge_files: bool = False) -> dict:
                          article_file_id=None, cloud_pushed_at=None)
         db.log_event(conn, "info", "offline", aweme_id,
                      f"purge={int(purge_files)}")
-    rel = cc.call_content("pushRelease", note=f"下架 {len(ids)} 集", episodes=0)
+    rel = cc.call_content("pushRelease", note=f"下架 {len(ids)} 集",
+                          episodes=conn.execute(
+                              "SELECT COUNT(*) FROM videos WHERE stage='published'").fetchone()[0])
     return {"removed": (res or {}).get("removed", len(ids)),
             "filesRemoved": (res or {}).get("filesRemoved", 0),
             "release": rel}
+
+
+def restore(conn, ids: Optional[list[str]] = None, *, column_id: str = "",
+            sec_user_id: str = "", reporter=None) -> dict:
+    """
+    重新上架：清掉本地下架标记，再把元数据同步上去。
+
+    下架时文件没删（purge_files 默认 false），所以这里不用重传音频和正文，
+    只把 enabled 改回 true、把栏目里的 episodeIds 补回去。
+    """
+    picked = [str(one) for one in (ids or []) if one]
+    scope, params = "IFNULL(offline, 0) = 1", []
+    if column_id:
+        scope += " AND column_id=?"
+        params.append(column_id)
+    if sec_user_id:
+        scope += " AND sec_user_id=?"
+        params.append(sec_user_id)
+    if column_id or sec_user_id:
+        picked += [r["aweme_id"] for r in conn.execute(
+            f"SELECT aweme_id FROM videos WHERE {scope}", tuple(params)).fetchall()]
+    ids = list(dict.fromkeys(picked))
+    if not ids:
+        raise cc.CloudError("该范围里没有已下架的条目")
+
+    # 先清标记：栏目行和分集行都是从 offline 列算出来的，顺序不能反
+    db.set_offline(conn, ids, False)
+    missing = [one for one in ids
+               if not (db.get_video(conn, one) or {}).get("audio_url")]
+    if missing and reporter:
+        reporter(f"{len(missing)} 集云端文件已被删过，需要重新上架才会重传")
+    if reporter:
+        reporter(f"重新上架 {len(ids)} 集，同步元数据")
+    meta = push_meta(conn)
+    rel = cc.call_content("pushRelease", note=f"重新上架 {len(ids)} 集",
+                          episodes=meta["episodes"]["total"])
+    for aweme_id in ids:
+        db.log_event(conn, "info", "restore", aweme_id, "解除下架标记")
+    return {"restored": len(ids), "meta": meta, "release": rel,
+            "needsUpload": missing[:30]}
 
 
 def retract(conn, ids: list[str]) -> dict:
@@ -535,6 +731,7 @@ def retract(conn, ids: list[str]) -> dict:
     ids = [str(one) for one in ids if one]
     if not ids:
         raise cc.CloudError("没有要撤回的条目")
+    db.set_offline(conn, ids, False)
     for aweme_id in ids:
         db.set_stage(conn, aweme_id, "article", audio_url=None, article_url=None,
                      audio_file_id=None, article_file_id=None, cloud_pushed_at=None)
