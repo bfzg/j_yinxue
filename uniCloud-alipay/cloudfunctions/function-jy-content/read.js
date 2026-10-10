@@ -17,7 +17,7 @@ const {
   EPISODE_FIELDS,
   COLUMN_FIELDS,
   DEFAULT_APP,
-  DEFAULT_SETTINGS,
+  readSettings,
 } = require('./lib.js')
 
 const https = require('node:https')
@@ -78,7 +78,21 @@ function liveIds(view, col) {
   return { ids: kept, hasRef: ids.length > 0 }
 }
 
-function toEpisode(doc) {
+/**
+ * 音频入口开关（jy_meta → settings.showAudio）。
+ * 关掉时读接口一律不吐 audioUrl，正文照常，审核期线上拿不到任何可播地址。
+ * 读失败按关闭处理：宁可少给音频，也不能把入口漏给审核。
+ */
+async function audioAllowed() {
+  try {
+    return readSettings(await getMeta()).showAudio === true
+  }
+  catch (err) {
+    return false
+  }
+}
+
+function toEpisode(doc, allowAudio) {
   const out = pick(doc, EPISODE_FIELDS)
   out.id = doc._id || doc.id
   out.enabled = doc.enabled !== false
@@ -86,6 +100,9 @@ function toEpisode(doc) {
   out.episodeNo = numOr(doc.episodeNo, 0)
   out.episodeTotal = numOr(doc.episodeTotal, 0)
   out.duration = numOr(doc.duration, 0)
+  if (!allowAudio) {
+    out.audioUrl = ''
+  }
   return out
 }
 
@@ -97,7 +114,7 @@ async function manifest() {
   ])
   return {
     app: (meta && meta.app) || DEFAULT_APP,
-    settings: (meta && meta.settings) || DEFAULT_SETTINGS,
+    settings: readSettings(meta),
     dataVersion: numOr(meta && meta.dataVersion, 0),
     updatedAt: numOr(meta && meta.updatedAt, 0),
     counts: {
@@ -131,7 +148,7 @@ async function column(id) {
   if (!id) {
     return { code: 400, message: '缺少参数 id' }
   }
-  const view = await liveView()
+  const [view, allowAudio] = await Promise.all([liveView(), audioAllowed()])
   const found = await db().collection(COLLECTIONS.columns).doc(id).get()
   const doc = found.data && found.data[0]
   if (!doc) {
@@ -154,7 +171,7 @@ async function column(id) {
   // 库里缺哪集就跳过哪集，顺序始终按 episodeIds
   const byId = rowsToMap(fetched.rows)
   Object.keys(byId).forEach((key) => {
-    byId[key] = toEpisode(byId[key])
+    byId[key] = toEpisode(byId[key], allowAudio)
   })
   const episodes = ids
     .map(one => byId[String(one)])
@@ -182,13 +199,14 @@ async function episodes(ids) {
   const all = String(ids || '').split(',').map(one => one.trim()).filter(Boolean)
   // 调用方手滑传重了也别吐出重复的集，播放列表会连着播两遍
   const list = Array.from(new Set(all))
+  const allowAudio = await audioAllowed()
   if (!list.length) {
     return { items: [] }
   }
   const fetched = await docsByIds(COLLECTIONS.episodes, list)
   const byId = rowsToMap(fetched.rows)
   Object.keys(byId).forEach((key) => {
-    byId[key] = toEpisode(byId[key])
+    byId[key] = toEpisode(byId[key], allowAudio)
   })
   return {
     items: list.map(one => byId[String(one)]).filter(Boolean),
@@ -197,7 +215,7 @@ async function episodes(ids) {
 }
 
 async function articles(query, body) {
-  const view = await liveView()
+  const [view, allowAudio] = await Promise.all([liveView(), audioAllowed()])
   const page = pageParams(query, body, 200)
   const both = await Promise.all([
     orderEpisodes().skip(page.offset).limit(page.limit).get(),
@@ -205,7 +223,7 @@ async function articles(query, body) {
   ])
   return {
     items: (both[0].data || []).map((doc) => {
-      const one = toEpisode(doc)
+      const one = toEpisode(doc, allowAudio)
       one.rank = rankOf(view, one.id)
       return one
     }),
@@ -224,8 +242,9 @@ async function playlist(query, body) {
     db().collection(COLLECTIONS.episodes).count(),
     getMeta(),
   ])
+  const allowAudio = readSettings(three[2]).showAudio === true
   const items = (three[0].data || []).map((doc) => {
-    const one = toEpisode(doc)
+    const one = toEpisode(doc, allowAudio)
     return {
       id: one.id,
       title: one.title,
@@ -249,7 +268,7 @@ async function playlist(query, body) {
     total: numOr(three[1] && three[1].total, 0),
     limit: page.limit,
     offset: page.offset,
-    settings: (three[2] && three[2].settings) || DEFAULT_SETTINGS,
+    settings: readSettings(three[2]),
   }
 }
 
@@ -257,12 +276,15 @@ async function article(id) {
   if (!id) {
     return { code: 400, message: '缺少参数 id' }
   }
-  const res = await db().collection(COLLECTIONS.episodes).doc(id).get()
+  const [res, allowAudio] = await Promise.all([
+    db().collection(COLLECTIONS.episodes).doc(id).get(),
+    audioAllowed(),
+  ])
   const doc = res.data && res.data[0]
   if (!doc) {
     return { code: 404, message: `文章不存在: ${id}` }
   }
-  return { item: toEpisode(doc) }
+  return { item: toEpisode(doc, allowAudio) }
 }
 
 /**

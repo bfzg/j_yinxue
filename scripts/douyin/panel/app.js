@@ -711,6 +711,7 @@ function renderProbe() {
       row('分集', RC.episodes, L.pushed)}${row('栏目', RC.columns, L.articles)
     }${row('账号', RC.accounts, L.accounts)}${row('上架记录', RC.releases, null)
     }<tr><td class="t">dataVersion</td><td class="num">${R.dataVersion}</td><td class="num" colspan="2" style="color:var(--ink3)">${esc(recent)}</td></tr>`
+    + `<tr><td class="t">听文章入口</td><td class="num" colspan="3" style="color:${(R.settings || {}).showAudio ? 'var(--ok)' : 'var(--ink3)'}">${(R.settings || {}).showAudio ? '开（jy_meta → settings.showAudio = true）' : '关（要开就在 jy_meta 的 settings 里把 showAudio 改成 true）'}</td></tr>`
     + `<tr><td class="t">待推 / 待同步</td><td class="num" colspan="3">${L.pending || 0} 集成文未推，${(d.res || {}).diff ? Math.max(0, -(d.res.diff.episodes || 0)) : 0} 集本地已推但线上没有</td></tr>`
     return
   }

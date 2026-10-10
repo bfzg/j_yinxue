@@ -83,7 +83,35 @@ def _online_version(name: str) -> str:
         return ""
 
 
-def check_one(name: str, *, node: str | None, token_fp: str, reporter=None) -> dict[str, Any]:
+def _local_setting_keys(name: str, node: str | None) -> list[str]:
+    """本地 lib.js 里声明的站点设置字段，读接口的 settings 就该有这些"""
+    lib = FUNC_ROOT / name / "lib.js"
+    if not (node and lib.exists()):
+        return []
+    r = subprocess.run([node, "-e",
+                        f"process.stdout.write(JSON.stringify(Object.keys("
+                        f"require({json.dumps(str(lib))}).DEFAULT_SETTINGS||{{}})))"],
+                       capture_output=True, text=True)
+    try:
+        return [str(k) for k in json.loads(r.stdout)] if r.returncode == 0 else []
+    except Exception:
+        return []
+
+
+def _online_setting_keys() -> list[str]:
+    """问线上 manifest 实际回吐了哪些 settings 字段（失败返回空，交给上层判）"""
+    try:
+        import cloud_client as cc
+        data = cc.call_content("manifest", attempts=1)
+        data = (data or {}).get("data") or (data or {})
+        settings = data.get("settings")
+        return [str(k) for k in (settings or {})]
+    except Exception:
+        return []
+
+
+def check_one(name: str, *, node: str | None, token_fp: str, reporter=None,
+            online_setting_keys: list[str] | None = None) -> dict[str, Any]:
     src = FUNC_ROOT / name
     files = _js_files(name)
     syntax = _check_syntax(name, node)
@@ -102,9 +130,17 @@ def check_one(name: str, *, node: str | None, token_fp: str, reporter=None) -> d
     out["online"] = _online_version(name)
     # 线上报不出来 = 那个函数还是没带 version 的旧版，一样得重传
     out["stale"] = bool(out["version"]) and out["online"] != out["version"]
+    # 版本号会撞（改了代码忘了升），字段差不会说谎：
+    # 本地声明了线上却不认的设置项，说明跑的还是旧函数，改数据库也不会生效
+    out["settingKeys"] = _local_setting_keys(name, node)
+    out["onlineSettingKeys"] = online_setting_keys
+    out["missingKeys"] = [k for k in out["settingKeys"] if k not in online_setting_keys]
+    if out["missingKeys"]:
+        out["stale"] = True
 
     if reporter:
-        mark = "需重传" if out["stale"] else "已一致"
+        miss = out.get("missingKeys") or []
+        mark = ("需重传" + (f"（线上缺 {', '.join(miss)}）" if miss else "")) if out["stale"] else "已一致"
         reporter(f"{name}：v{out['version'] or '?'} / 线上 {out['online'] or '未上报'}"
                  f" → {mark}；{len(files)} 个 js，语法{out['syntax'] if isinstance(out['syntax'], str) else '有错'}")
     return out
@@ -120,11 +156,15 @@ def check_all(*, online: bool = True, reporter=None) -> dict[str, Any]:
                               "token": ("未配置" if not local_token
                                         else f"已配置 {len(local_token)} 字符 / {_fingerprint(local_token)}"),
                               "functions": {}}
+    online_setting_keys = _online_setting_keys() if online else []
     for name in FUNCTIONS:
-        one = check_one(name, node=node, token_fp=token_fp, reporter=reporter)
+        one = check_one(name, node=node, token_fp=token_fp, reporter=reporter,
+                      online_setting_keys=online_setting_keys)
         if not online:
             one.pop("online", None)
             one.pop("stale", None)
+            one.pop("missingKeys", None)
+            one.pop("onlineSettingKeys", None)
         result["functions"][name] = one
 
     problems: list[str] = []
@@ -139,6 +179,9 @@ def check_all(*, online: bool = True, reporter=None) -> dict[str, Any]:
             problems.append(f"{name}：语法检查没过 → {one['syntax']}")
         if one.get("stale"):
             problems.append(f"{name}：线上 {one['online']} 落后本地 {one['version']}，需要重新上传")
+        for key in one.get("missingKeys") or []:
+            problems.append(f"{name}：线上函数不认 settings.{key}（跑的还是旧版），"
+                            f"后台改 jy_meta 不会生效，必须重新上传")
 
     stale = [n for n, one in result["functions"].items() if one.get("stale")]
     result["problems"] = problems

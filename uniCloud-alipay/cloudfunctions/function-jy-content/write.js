@@ -27,6 +27,7 @@ const {
   docsByIds,
   DEFAULT_APP,
   DEFAULT_SETTINGS,
+  readSettings,
 } = require('./lib.js')
 
 const MAX_ITEMS_PER_CALL = 300
@@ -287,7 +288,7 @@ async function remoteStats() {
   const recent = await db().collection(COLLECTIONS.releases).orderBy('releasedAt', 'desc').limit(5).get()
   return {
     app: (meta && meta.app) || DEFAULT_APP,
-    settings: (meta && meta.settings) || DEFAULT_SETTINGS,
+    settings: readSettings(meta),
     dataVersion: numOr(meta && meta.dataVersion, 0),
     updatedAt: numOr(meta && meta.updatedAt, 0),
     counts: {
@@ -308,12 +309,13 @@ async function remoteStats() {
 
 /** 改站点名/自动连播等全局设置 */
 async function updateSettings(payload) {
-  await ensureMeta()
+  const meta = await ensureMeta()
   const patch = {}
   if (payload.app)
     patch.app = Object.assign({}, DEFAULT_APP, compact(payload.app))
   if (payload.settings) {
-    patch.settings = Object.assign({}, DEFAULT_SETTINGS, compact(payload.settings))
+    // 以线上现有设置为底再覆盖，改站点名之类的操作不会把手改的 showAudio 抹回默认值
+    patch.settings = Object.assign({}, DEFAULT_SETTINGS, readSettings(meta), compact(payload.settings))
   }
   if (!Object.keys(patch).length) {
     return { code: 400, message: '没有要更新的字段' }

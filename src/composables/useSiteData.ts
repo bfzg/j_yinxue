@@ -1,4 +1,4 @@
-import { reactive } from 'vue'
+import { computed, reactive } from 'vue'
 import { fetchAll, fetchColumn, fetchColumns, fetchManifest } from '@/api/content'
 import type { SiteApp, SiteManifest, SiteSettings } from '@/api/content'
 import type { Article } from '@/types/article'
@@ -52,7 +52,12 @@ const K_MANIFEST = 'jy:manifest'
 const MANIFEST_TTL = 5 * 60 * 1000
 
 const SEED_APP: SiteApp = { name: '', author: '', cover: '', description: '' }
-const SEED_SETTINGS: SiteSettings = { autoplayNext: true, playMode: 'sequence' }
+const SEED_SETTINGS: SiteSettings = { autoplayNext: true, playMode: 'sequence', showAudio: false }
+
+/** 云端可能返回老版 settings（缺字段），一律和默认值合并，音频开关默认关 */
+function normalizeSettings(raw?: SiteSettings): SiteSettings {
+  return { ...SEED_SETTINGS, ...(raw || {}) }
+}
 
 const site = reactive<SiteState>({
   ready: false,
@@ -108,7 +113,7 @@ function hydrate() {
   const manifest = readManifestCache()
   if (manifest) {
     site.app = manifest.app || SEED_APP
-    site.settings = manifest.settings || SEED_SETTINGS
+    site.settings = normalizeSettings(manifest.settings)
     site.dataVersion = Number(manifest.dataVersion || 0)
     site.updatedAt = Number(manifest.updatedAt || 0)
     site.counts = manifest.counts || site.counts
@@ -119,7 +124,7 @@ function hydrate() {
 
 function applyManifest(manifest: SiteManifest) {
   site.app = manifest.app || SEED_APP
-  site.settings = manifest.settings || SEED_SETTINGS
+  site.settings = normalizeSettings(manifest.settings)
   site.dataVersion = Number(manifest.dataVersion || 0)
   site.updatedAt = Number(manifest.updatedAt || 0)
   site.counts = manifest.counts || site.counts
@@ -213,6 +218,13 @@ export async function loadColumnEpisodes(id: string): Promise<ColumnEpisode[]> {
   }
 }
 
+/**
+ * 「听文章」入口是否显示，唯一来源是线上 jy_meta 的 settings.showAudio。
+ * 模块级 computed，任何页面 import 进来都是同一个响应式开关，
+ * 后台手改数据库后小程序下次拉 manifest 即生效，不用重新发版。
+ */
+export const audioEnabled = computed(() => site.settings?.showAudio === true)
+
 export function findColumn(id: string): Column | undefined {
   return site.columns.find(item => item.id === id)
 }
@@ -230,6 +242,7 @@ export function useSiteData() {
     loadColumnEpisodes,
     findColumn,
     findArticle,
+    audioEnabled,
   }
 }
 

@@ -189,3 +189,35 @@ describe('下拉刷新流程 useSiteRefresh', () => {
     expect(showToast.mock.calls.at(-1)?.[0].title).toBe('暂时没有新内容')
   })
 })
+
+describe('听文章入口开关 showAudio', () => {
+  it('线上 settings 没这个字段时默认关闭，审核期不露音频入口', async () => {
+    fetchManifest.mockResolvedValue(manifest(1))
+    const { audioEnabled, ensureSiteData } = await loadModule()
+
+    await ensureSiteData()
+
+    expect(audioEnabled.value).toBe(false)
+  })
+
+  it('后台把 jy_meta 的 settings.showAudio 改成 true 即开启', async () => {
+    fetchManifest.mockResolvedValue({
+      ...manifest(1),
+      settings: { autoplayNext: true, playMode: 'sequence', showAudio: true },
+    })
+    const { audioEnabled, ensureSiteData } = await loadModule()
+
+    await ensureSiteData()
+
+    expect(audioEnabled.value).toBe(true)
+  })
+
+  it('缓存里没这个字段的旧 manifest 也不会漏出音频入口', async () => {
+    ;(globalThis as any).uni.setStorageSync('jy:manifest', manifest(9))
+    fetchManifest.mockResolvedValue(manifest(9))
+    const { audioEnabled, site } = await loadModule()
+
+    expect(site.settings.showAudio).toBe(false)
+    expect(audioEnabled.value).toBe(false)
+  })
+})

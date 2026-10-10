@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
-import { site } from '@/composables/useSiteData'
+import { computed, watch } from 'vue'
+import { audioEnabled, site } from '@/composables/useSiteData'
 import { useAudioPlayerWithPlaylist } from '@/composables/useAudioPlayer'
 
 defineOptions({
@@ -73,10 +73,17 @@ function onSliderChange(event: any) {
 function onClose() {
   destroy()
 }
+
+// 后台关掉音频入口时立刻收场，避免浮层藏了但声音还在响
+watch(audioEnabled, (on) => {
+  if (!on) {
+    destroy()
+  }
+})
 </script>
 
 <template>
-  <view v-if="state.started" class="floating-player">
+  <view v-if="audioEnabled && state.started" class="floating-player">
     <!-- 拖拽手柄 -->
     <view class="drag-handle" />
 

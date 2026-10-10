@@ -215,10 +215,65 @@ async function run() {
   const stats = log('remoteStats', await call('remoteStats', {}, { token: TOKEN }))
   out.push(`remoteStats: ${JSON.stringify(stats)}`)
 
+  assert.strictEqual(m0.settings.showAudio, false, '听文章入口默认必须关闭')
+  assert.strictEqual(man.settings.showAudio, false, '听文章入口默认必须关闭')
+
+  // 关闭状态：四条读路径一律不吐 audioUrl，正文地址必须完好
+  const offArt = await call('articles', { offset: 0, limit: 3 })
+  const offCol = await call('column', { id: 'col-dfg' })
+  const offPl = await call('playlist', {})
+  const offOne = await call('article', { id: 'a1' })
+  const offBatch = await call('episodes', { ids: 'a1,a3' })
+  // 库里各集的原样地址，用来比对「关音频不能动正文」
+  const rawById = Object.fromEntries(rows('jy_episodes').map(d => [String(d._id), d]))
+  const offAll = [
+    ...offArt.data.items,
+    ...offCol.data.item.episodes,
+    ...offPl.data.items,
+    offOne.data.item,
+    ...offBatch.data.items,
+  ]
+  assert.ok(offAll.length >= 9, '音频开关用例覆盖到的条目太少')
+  offAll.forEach((one) => {
+    assert.strictEqual(one.audioUrl, '', `听文章关闭时仍吐出了 audioUrl: ${one.id || one.awemeId}`)
+  })
+  // playlist 协议上不带正文字段，其它接口必须和库里一致
+  const keepText = [...offArt.data.items, ...offCol.data.item.episodes, offOne.data.item, ...offBatch.data.items]
+  for (const one of keepText) {
+    const key = String(one.id || one.awemeId)
+    assert.strictEqual(one.articleUrl || '', rawById[key].articleUrl || '', `关闭音频弄丢了正文地址: ${key}`)
+  }
+  out.push(`听文章关闭: ${offAll.length} 条全部无 audioUrl，正文地址与库里一致 ✓`)
+
   log('updateSettings', await call('updateSettings', { settings: { autoplayNext: false, playMode: 'sequence' } }, { token: TOKEN }))
   const man2 = await call('manifest')
   assert.strictEqual(man2.data.settings.autoplayNext, false)
   out.push('updateSettings 生效 ✓')
+
+  // 过审后手改 jy_meta 打开音频，再改站点名不能被抹回默认值
+  log('打开听文章', await call('updateSettings', { settings: { showAudio: true } }, { token: TOKEN }))
+  assert.strictEqual((await call('manifest')).data.settings.showAudio, true)
+  log('只改站点名', await call('updateSettings', { app: { name: '九哥阅读' } }, { token: TOKEN }))
+  const man3 = await call('manifest')
+  assert.strictEqual(man3.data.app.name, '九哥阅读')
+  assert.strictEqual(man3.data.settings.showAudio, true, '改站点名不该把手开的音频关回去')
+  assert.strictEqual(man3.data.settings.autoplayNext, false, '改 settings 里的一个字段不该丢另一个字段')
+  out.push('showAudio：默认关，手改后不被其它设置覆盖 ✓')
+
+  // 打开后 audioUrl 必须原样回来，保证以后开音频不用再动代码
+  const onArt = await call('articles', { offset: 0, limit: 3 })
+  const onOne = await call('article', { id: 'a1' })
+  const onCol = await call('column', { id: 'col-dfg' })
+  const onPl = await call('playlist', {})
+  assert.strictEqual(onOne.data.item.audioUrl, rawById.a1.audioUrl, '打开后 audioUrl 没恢复')
+  for (const one of [...onArt.data.items, ...onPl.data.items]) {
+    assert.strictEqual(one.audioUrl || '', rawById[String(one.id)].audioUrl || '', `打开后 audioUrl 与库里不一致: ${one.id}`)
+  }
+  assert.ok(onArt.data.items[0].audioUrl, '打开后 articles 仍无 audioUrl')
+  assert.ok(onCol.data.item.episodes[0].audioUrl, '打开后 column 仍无 audioUrl')
+  assert.ok(onPl.data.items.some(e => e.audioUrl), '打开后 playlist 仍无 audioUrl')
+  assert.strictEqual(onPl.data.settings.showAudio, true, 'playlist 没回传 settings')
+  out.push('打开听文章: 四条读路径 audioUrl 全部恢复 ✓')
 
   log('deleteEpisodes(下架)', await call('deleteEpisodes', { ids: ['a2'] }, { token: TOKEN }))
   const one2 = await call('column', { id: 'col-dfg' })

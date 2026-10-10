@@ -18,7 +18,25 @@
     },
     "settings": {
       "bsonType": "object",
-      "description": "全局设置：autoplayNext / playMode"
+      "description": "全局设置。听文章入口总开关是 showAudio，默认关闭",
+      "properties": {
+        "autoplayNext": {
+          "bsonType": "bool",
+          "description": "播完自动连播下一集",
+          "defaultValue": true
+        },
+        "playMode": {
+          "bsonType": "string",
+          "description": "播放模式，目前只用 sequence",
+          "enum": ["sequence"],
+          "defaultValue": "sequence"
+        },
+        "showAudio": {
+          "bsonType": "bool",
+          "description": "是否显示「听文章」入口。审核期保持 false；过审后改成 true 即可打开，无需重新发版小程序",
+          "defaultValue": false
+        }
+      }
     },
     "dataVersion": {
       "bsonType": "long",

@@ -78,7 +78,17 @@ const DEFAULT_APP = {
   cover: '',
   description: '九哥原创文章阅读',
 }
-const DEFAULT_SETTINGS = { autoplayNext: true, playMode: 'sequence' }
+/**
+ * showAudio 是「听文章」入口的总开关，默认关闭。
+ * 审核期线上不露任何音频入口，过审后手动把 jy_meta 文档的
+ * settings.showAudio 改成 true 即可打开，不用重新发版小程序。
+ */
+const DEFAULT_SETTINGS = { autoplayNext: true, playMode: 'sequence', showAudio: false }
+
+/** jy_meta 里的 settings 可能缺字段（老数据/手改漏写），一律和默认值合并后再出去 */
+function readSettings(meta) {
+  return Object.assign({}, DEFAULT_SETTINGS, (meta && meta.settings) || {})
+}
 
 function db() {
   return uniCloud.database()
@@ -292,4 +302,5 @@ module.exports = {
   getMeta,
   ensureMeta,
   countOf,
+  readSettings,
 }

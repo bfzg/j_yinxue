@@ -8,7 +8,7 @@ import ArticleTopbar from './components/ArticleTopbar.vue'
 import { loadArticleText } from '@/api/content'
 import { playAudioDirect, setPlaylist, useAudioPlayerWithPlaylist } from '@/composables/useAudioPlayer'
 import { useCapsuleInset, useTopInset } from '@/composables/useSafeArea'
-import { ensureSiteData, useSiteData } from '@/composables/useSiteData'
+import { audioEnabled, ensureSiteData, useSiteData } from '@/composables/useSiteData'
 import { useSiteRefresh } from '@/composables/useSiteRefresh'
 import { episodeDisplayNo, sortByEpisodeOrder } from '@/utils/episodeOrder'
 import type { Article, ArticleBlock } from '@/types/article'
@@ -94,7 +94,8 @@ const playlistItems = computed<PlaylistItem[]>(() => {
 })
 
 function startPlay() {
-  if (!article.value?.audioUrl)
+  // 后台把 showAudio 关掉时这里也不能起播，按钮只是第一道闸
+  if (!audioEnabled.value || !article.value?.audioUrl)
     return
 
   const index = playlistItems.value.findIndex(item => item.id === article.value!.id)
@@ -221,7 +222,7 @@ onLoad(async (options) => {
     <view class="rule" />
 
     <!-- 听文章入口按钮 -->
-    <view v-if="article.audioUrl" class="listen-entry flex items-center justify-center gap-2" @tap="startPlay">
+    <view v-if="audioEnabled && article.audioUrl" class="listen-entry flex items-center justify-center gap-2" @tap="startPlay">
       <view
         class="listen-icon" :class="audioState.playing && audioState.src === article.audioUrl
           ? 'i-lucide-pause'

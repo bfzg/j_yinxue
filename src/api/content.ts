@@ -20,6 +20,11 @@ export interface SiteApp {
 export interface SiteSettings {
   autoplayNext: boolean
   playMode: string
+  /**
+   * 「听文章」入口总开关，后台数据库 jy_meta 的 settings.showAudio。
+   * 缺省关闭：审核期不露音频入口，过审后手改 true 即开，无需重新发版。
+   */
+  showAudio?: boolean
 }
 
 export interface SiteManifest {
