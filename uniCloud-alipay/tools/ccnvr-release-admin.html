@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CCNVR 版本发布后台</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.5 -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #0f172a; color: #e2e8f0; }
+  header { position: sticky; top: 0; z-index: 10; background: #111c33; border-bottom: 1px solid #1e293b;
+    padding: 12px 18px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  h1 { font-size: 15px; margin: 0 8px 0 0; font-weight: 700; }
+  label { font-size: 12px; color: #94a3b8; }
+  input, select, textarea { background: #0b1220; color: #e2e8f0; border: 1px solid #334155;
+    border-radius: 8px; padding: 6px 9px; font: inherit; }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: #3b82f6; }
+  textarea { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; resize: vertical; }
+  button { background: #1d4ed8; color: #fff; border: 0; border-radius: 8px; padding: 7px 13px;
+    font: inherit; font-weight: 600; cursor: pointer; }
+  button:hover { background: #2563eb; }
+  button.ghost { background: #1e293b; color: #cbd5e1; }
+  button.ghost:hover { background: #334155; }
+  button.danger { background: #b91c1c; }
+  button.danger:hover { background: #dc2626; }
+  main { display: grid; grid-template-columns: 320px 1fr; gap: 18px; padding: 18px; align-items: start; }
+  .card { background: #111c33; border: 1px solid #1e293b; border-radius: 12px; padding: 14px; }
+  .list { display: flex; flex-direction: column; gap: 6px; max-height: 70vh; overflow: auto; }
+  .row { display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    padding: 8px 10px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; }
+  .row:hover { background: #16233d; }
+  .row.active { background: #16233d; border-color: #3b82f6; }
+  .ver { font-weight: 700; }
+  .muted { color: #64748b; font-size: 12px; }
+  .badge { font-size: 11px; padding: 1px 7px; border-radius: 999px; }
+  .on { background: #064e3b; color: #6ee7b7; }
+  .off { background: #422006; color: #fcd34d; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+  .toast { position: fixed; right: 18px; bottom: 18px; background: #1e293b; border: 1px solid #334155;
+    padding: 10px 14px; border-radius: 10px; opacity: 0; transition: opacity .2s; max-width: 420px; }
+  .toast.show { opacity: 1; }
+  .toast.err { border-color: #b91c1c; }
+  code { background: #0b1220; padding: 1px 5px; border-radius: 5px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>CCNVR 版本发布后台</h1>
+  <label>接口地址 <input id="endpoint" size="52" /></label>
+  <label>管理令牌 <input id="token" type="password" size="24" placeholder="ADMIN_TOKEN" /></label>
+  <button class="ghost" id="saveCfg">记住</button>
+  <span class="muted" id="stat"></span>
+</header>
+
+<main>
+  <section class="card">
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button id="refresh">刷新列表</button>
+      <button class="ghost" id="new">新建版本</button>
+    </div>
+    <div class="list" id="list"></div>
+  </section>
+
+  <section class="card">
+    <div class="grid2">
+      <div class="field"><label>版本号（不带 v）</label><input id="version" placeholder="1.0.13" /></div>
+      <div class="field"><label>发布通道</label>
+        <select id="channel"><option value="stable">stable</option><option value="beta">beta</option></select>
+      </div>
+      <div class="field"><label>发布时间</label><input id="releasedAt" type="datetime-local" /></div>
+      <div class="field"><label>状态</label>
+        <label style="display:flex;gap:6px;align-items:center;color:#e2e8f0">
+          <input type="checkbox" id="published" style="width:auto" /> 已发布（不勾选为草稿）
+        </label>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>概述（中文）</label><input id="sumZh" /></div>
+      <div class="field"><label>概述（英文）</label><input id="sumEn" /></div>
+    </div>
+    <div class="field"><label>更新说明 notes.zh（写入更新源索引）</label><textarea id="notesZh" rows="2"></textarea></div>
+    <div class="field"><label>更新说明 notes.en</label><textarea id="notesEn" rows="2"></textarea></div>
+    <div class="field"><label>平台产物 platforms（JSON，键为 windows-amd64 / linux-amd64 / linux-arm64 / docker）</label>
+      <textarea id="platforms" rows="14" spellcheck="false"></textarea></div>
+    <div class="field"><label>更新日志 changelog（JSON 数组，tag/tagEn + text.zh/en）</label>
+      <textarea id="changelog" rows="10" spellcheck="false"></textarea></div>
+    <div style="display:flex;gap:8px">
+      <button id="save">保存</button>
+      <button class="ghost" id="toggle">切换发布状态</button>
+      <button class="danger" id="del">删除此版本</button>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let currentId = null;
+let currentItem = null;
+
+function endpoint() { return $('endpoint').value.trim(); }
+function token() { return $('token').value; }
+
+function toast(msg, isErr) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (isErr ? ' err' : '');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { el.className = 'toast'; }, 4000);
+}
+
+async function api(action, params) {
+  const body = Object.assign({ action }, params || {});
+  const res = await fetch(endpoint(), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-admin-token': token() },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json();
+  if (json.code !== 0) throw new Error(json.message || ('code=' + json.code));
+  return json.data;
+}
+
+function pad(n) { return String(n).padStart(2, '0'); }
+function toLocalInput(ms) {
+  if (!ms) return '';
+  const d = new Date(ms);
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+
+function renderList(items) {
+  const box = $('list');
+  box.innerHTML = '';
+  $('stat').textContent = '共 ' + items.length + ' 个版本';
+  if (!items.length) { box.innerHTML = '<div class="muted">还没有版本，点「新建版本」开始。</div>'; return; }
+  for (const it of items) {
+    const row = document.createElement('div');
+    row.className = 'row' + (it._id === currentId ? ' active' : '');
+    const platforms = Object.keys(it.platforms || {}).length;
+    row.innerHTML = '<div><span class="ver">v' + it.version + '</span> <span class="muted">' + it.channel + ' · ' + platforms + ' 平台</span></div>' +
+      '<span class="badge ' + (it.published ? 'on' : 'off') + '">' + (it.published ? '已发布' : '草稿') + '</span>';
+    row.onclick = () => loadItem(it);
+    box.appendChild(row);
+  }
+}
+
+function loadItem(it) {
+  currentId = it._id;
+  currentItem = it;
+  $('version').value = it.version || '';
+  $('channel').value = it.channel || 'stable';
+  $('published').checked = it.published !== false;
+  $('releasedAt').value = toLocalInput(it.releasedAt);
+  $('sumZh').value = (it.summary && it.summary.zh) || '';
+  $('sumEn').value = (it.summary && it.summary.en) || '';
+  $('notesZh').value = (it.notes && it.notes.zh) || '';
+  $('notesEn').value = (it.notes && it.notes.en) || '';
+  $('platforms').value = JSON.stringify(it.platforms || {}, null, 2);
+  $('changelog').value = JSON.stringify(it.changelog || [], null, 2);
+  refreshActive();
+}
+
+function refreshActive() {
+  for (const row of $('list').children) { row.classList.remove('active'); }
+  renderActiveMark();
+}
+function renderActiveMark() {}
+
+function newItem() {
+  currentId = null;
+  currentItem = null;
+  $('version').value = '';
+  $('channel').value = 'stable';
+  $('published').checked = true;
+  $('releasedAt').value = toLocalInput(Date.now());
+  $('sumZh').value = ''; $('sumEn').value = '';
+  $('notesZh').value = ''; $('notesEn').value = '';
+  $('platforms').value = JSON.stringify({
+    'windows-amd64': { installer: { url: '', fileName: '', size: 0 }, upgrade: { url: '', fileName: '', size: 0, sha256: '', minVersion: '' } }
+  }, null, 2);
+  $('changelog').value = JSON.stringify([
+    { type: 'new', tag: '新增', tagEn: 'New', text: { zh: '', en: '' } }
+  ], null, 2);
+}
+
+function parseJson(text, label) {
+  try { return JSON.parse(text || 'null'); }
+  catch (e) { throw new Error(label + ' 不是合法 JSON：' + e.message); }
+}
+
+function collect() {
+  const version = $('version').value.trim().replace(/^v/i, '');
+  if (!version) throw new Error('版本号不能为空');
+  const dt = $('releasedAt').value;
+  const item = {
+    version,
+    channel: $('channel').value,
+    published: $('published').checked,
+    releasedAt: dt ? new Date(dt).getTime() : Date.now(),
+    summary: { zh: $('sumZh').value.trim(), en: $('sumEn').value.trim() },
+    notes: { zh: $('notesZh').value, en: $('notesEn').value },
+    platforms: parseJson($('platforms').value, 'platforms') || {},
+    changelog: parseJson($('changelog').value, 'changelog') || [],
+  };
+  return item;
+}
+
+async function refresh() {
+  try {
+    const data = await api('list', { published: 'all', limit: 200 });
+    renderList(data.items || []);
+  } catch (e) { toast('读取失败：' + e.message, true); }
+}
+
+async function save() {
+  try {
+    const item = collect();
+    const data = await api('upsertVersion', { item });
+    toast('已保存 ' + (data.ids || []).join(', '));
+    await refresh();
+  } catch (e) { toast('保存失败：' + e.message, true); }
+}
+
+async function toggle() {
+  $('published').checked = !$('published').checked;
+  await save();
+}
+
+async function del() {
+  const id = currentId || ('v' + $('version').value.trim().replace(/^v/i, ''));
+  if (!id || !confirm('确认删除 ' + id + ' ？此操作不可撤销。')) return;
+  try {
+    await api('deleteVersion', { id });
+    toast('已删除 ' + id);
+    newItem();
+    await refresh();
+  } catch (e) { toast('删除失败：' + e.message, true); }
+}
+
+function setStatus(msg) { $('stat').textContent = msg; }
+function loadCfg() {
+  $('endpoint').value = localStorage.getItem('ccnvr_release_endpoint') || 'https://env-00jxu1ytdn0v.dev-hz.cloudbasefunction.cn/ccnvr-release';
+  $('token').value = localStorage.getItem('ccnvr_release_token') || '';
+}
+function saveCfg() {
+  localStorage.setItem('ccnvr_release_endpoint', endpoint());
+  localStorage.setItem('ccnvr_release_token', token());
+  toast('已记住接口地址与令牌');
+}
+
+$('saveCfg').onclick = saveCfg;
+$('refresh').onclick = refresh;
+$('new').onclick = newItem;
+$('save').onclick = save;
+$('toggle').onclick = toggle;
+$('del').onclick = del;
+
+loadCfg();
+newItem();
+if (token()) refresh();
+</script>
+</body>
+</html>

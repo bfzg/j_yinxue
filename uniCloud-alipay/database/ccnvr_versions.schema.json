@@ -1,0 +1,79 @@
+{
+  "bsonType": "object",
+  "description": "CCNVR 版本发布记录：一条文档 = 一个版本（_id = \"v\" + 版本号）。平台下分 installer 安装包（首次部署、全量、无签名）与 upgrade 升级包（设备 OTA 增量、签名 zip，字段对齐 ccnvr_server 的 Index 契约）。",
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  },
+  "properties": {
+    "_id": {
+      "description": "文档ID，形如 v1.0.13，直接用「v+版本号」，便于幂等覆盖",
+      "bsonType": "string"
+    },
+    "version": {
+      "bsonType": "string",
+      "description": "语义版本号，不带 v 前缀，例如 1.0.13"
+    },
+    "channel": {
+      "bsonType": "string",
+      "description": "发布通道",
+      "enum": ["stable", "beta"]
+    },
+    "published": {
+      "bsonType": "bool",
+      "description": "是否已发布；false 为草稿，官网与设备端读不到"
+    },
+    "releasedAt": {
+      "bsonType": "long",
+      "description": "发布时间戳（毫秒）。对外更新源索引会换算成秒"
+    },
+    "summary": {
+      "bsonType": "object",
+      "description": "一句话概述（多语言）",
+      "properties": {
+        "zh": { "bsonType": "string", "description": "中文概述" },
+        "en": { "bsonType": "string", "description": "英文概述" }
+      }
+    },
+    "notes": {
+      "bsonType": "object",
+      "description": "完整更新说明（多语言），写入更新源索引的 notes",
+      "properties": {
+        "zh": { "bsonType": "string", "description": "中文说明" },
+        "en": { "bsonType": "string", "description": "英文说明" }
+      }
+    },
+    "changelog": {
+      "bsonType": "array",
+      "description": "更新日志条目；官网按 [标签] 文本 渲染圆点与彩色标签",
+      "items": {
+        "bsonType": "object",
+        "properties": {
+          "type": {
+            "bsonType": "string",
+            "description": "条目类型，决定官网圆点颜色",
+            "enum": ["new", "fix", "improve", "other"]
+          },
+          "tag": { "bsonType": "string", "description": "中文标签，如 新增/优化/修复" },
+          "tagEn": { "bsonType": "string", "description": "英文标签，如 New/Improved/Fixed" },
+          "text": {
+            "bsonType": "object",
+            "description": "条目正文（多语言）",
+            "properties": {
+              "zh": { "bsonType": "string" },
+              "en": { "bsonType": "string" }
+            }
+          }
+        }
+      }
+    },
+    "platforms": {
+      "bsonType": "object",
+      "description": "各平台产物。key 为 ccnvr_server OTA 平台名（windows-amd64 / linux-amd64 / linux-arm64 / docker）。每个平台下 installer 是官网下载的安装包，upgrade 是设备 OTA 升级包（含 sha256，脚本自动生成）。"
+    },
+    "createdAt": { "bsonType": "long", "description": "首次写入时间戳（毫秒）" },
+    "updatedAt": { "bsonType": "long", "description": "最后一次写入时间戳（毫秒）" }
+  }
+}

@@ -1,0 +1,22 @@
+[
+  {
+    "IndexName": "channel_published_released",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        { "Name": "channel", "Direction": "1", "Type": "varchar" },
+        { "Name": "published", "Direction": "1", "Type": "bool" },
+        { "Name": "releasedAt", "Direction": "-1", "Type": "long" }
+      ],
+      "MgoIsUnique": false
+    }
+  },
+  {
+    "IndexName": "version",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        { "Name": "version", "Direction": "1", "Type": "varchar" }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

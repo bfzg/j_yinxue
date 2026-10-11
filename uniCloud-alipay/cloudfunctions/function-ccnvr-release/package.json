@@ -1,0 +1,10 @@
+{
+  "name": "function-ccnvr-release",
+  "version": "1.0.0",
+  "description": "CCNVR 官网版本发布与更新日志的唯一入口：/ccnvr-release",
+  "extensions": {
+    "uni-cloud-jql": {}
+  },
+  "main": "index.js",
+  "dependencies": {}
+}
