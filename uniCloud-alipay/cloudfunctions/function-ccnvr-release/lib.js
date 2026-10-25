@@ -170,7 +170,7 @@ function compareVersion(a, b) {
   return 0
 }
 
-/** {zh, en} 多语言文本：允许只给一边，非法值一律丢弃 */
+/** {zh, en, ja} 多语言文本：允许只给部分语言，非法值一律丢弃 */
 function cleanText(value) {
   if (value == null) {
     return undefined
@@ -185,6 +185,9 @@ function cleanText(value) {
     }
     if (typeof value.en === 'string' && value.en.trim()) {
       out.en = value.en
+    }
+    if (typeof value.ja === 'string' && value.ja.trim()) {
+      out.ja = value.ja
     }
     return Object.keys(out).length ? out : undefined
   }

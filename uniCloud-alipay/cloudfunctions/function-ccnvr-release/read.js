@@ -87,10 +87,12 @@ function changelogOf(docs) {
   return (docs || []).map((doc) => {
     const zh = []
     const en = []
+    const ja = []
     ;(doc.changelog || []).forEach((entry) => {
       const text = entry.text || {}
       const tzh = typeof text === 'string' ? text : text.zh
       const ten = typeof text === 'string' ? '' : text.en
+      const tja = typeof text === 'string' ? '' : text.ja
       const tagZh = entry.tag || entry.tagEn || ''
       const tagEn = entry.tagEn || entry.tag || ''
       if (tzh) {
@@ -99,9 +101,12 @@ function changelogOf(docs) {
       if (ten) {
         en.push(`${tagEn ? `[${tagEn}] ` : ''}${ten}`)
       }
+      if (tja) {
+        ja.push(`${tagZh ? `[${tagZh}] ` : ''}${tja}`)
+      }
     })
-    return { version: String(doc.version || ''), notes: { zh, en } }
-  }).filter(one => one.notes.zh.length || one.notes.en.length)
+    return { version: String(doc.version || ''), releasedAt: numOr(doc.releasedAt, 0), notes: { zh, en, ja } }
+  }).filter(one => one.notes.zh.length || one.notes.en.length || one.notes.ja.length)
 }
 
 /** list：分页列出发布记录，官网后台与设备端都用得上 */
